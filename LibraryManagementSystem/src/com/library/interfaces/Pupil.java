@@ -6,5 +6,9 @@ package com.library.interfaces;
  * @author Muhammad Shahaam Siddiqui
  */
 public interface Pupil {
+    /**
+     * checks if pupil has admin status
+     * @return true if admin else false
+     */
     boolean isAdmin();
 }
