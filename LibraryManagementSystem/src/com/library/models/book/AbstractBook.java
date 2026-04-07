@@ -11,8 +11,8 @@ public abstract class AbstractBook {
     protected String author;
     protected String genre;
     protected int publishedYear;
-    private BookStatus status;
-    private BookType type;
+    protected BookStatus status;
+    protected BookType type;
 
     public AbstractBook(String ISBN, String title, String author, String genre,
         int publishedYear, BookType type) {
@@ -25,7 +25,7 @@ public abstract class AbstractBook {
         }
 
     public abstract boolean isAvailable();
-    public abstract double calculateLateFee();
+    public abstract double calculateLateFee(int daysLate);
 
     // setter
     public final void setISBN(String ISBN) {

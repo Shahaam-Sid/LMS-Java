@@ -24,4 +24,9 @@ public interface Reservable {
      * @return position
      */
     int getQueuePosition(Member member);
+    /**
+     * returns the list of all Members in Queue
+     * @return members
+     */
+    public String getQueue();
 }
