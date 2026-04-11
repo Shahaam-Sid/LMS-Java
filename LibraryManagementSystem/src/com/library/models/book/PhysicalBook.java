@@ -10,12 +10,17 @@ import java.time.LocalDate;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * class for PhysicalBook objects
+ * 
+ * @author Muhammad Shahaam Siddiqui
+ */
 public class PhysicalBook extends AbstractBook implements Searchable, Borrowable, Reservable {
 
-    protected String shelfLocation;
-    protected int totalCopies;
-    protected int availableCopies;
-    protected Queue<Member> reservationQueue;
+    private String shelfLocation;
+    private int totalCopies;
+    private int availableCopies;
+    private Queue<Member> reservationQueue;
 
     public PhysicalBook(String ISBN, String title, String author, String genre,
         int publishedYear, String shelfLocation, int totalCopies) {
@@ -27,18 +32,18 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
         }
 
     // setter
-    public final void setShelfLocation(String shelfLocation) {
+    public final void setShelfLocation(String shelfLocation) throws IllegalArgumentException {
         checkNullString(shelfLocation, "Shelf Location");
         checkLengthString(shelfLocation, 5, 25, "Shelf Location");
 
         this.shelfLocation = shelfLocation;
     }
-    public final void setTotalCopies(int totalCopies) {
+    public final void setTotalCopies(int totalCopies) throws IllegalArgumentException {
         if (totalCopies < 1) throw new IllegalArgumentException("Total Book Copies must be 1 or more");
 
         this.totalCopies = totalCopies;
     }
-    public final void setAvailableCopies(int availableCopies) {
+    public final void setAvailableCopies(int availableCopies) throws IllegalArgumentException {
         if (availableCopies < 0 || availableCopies > totalCopies) 
             throw new IllegalArgumentException("Available Copies must atleast 0 and lesser then total copies");
     
@@ -46,9 +51,9 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
     }
 
     // getter
-    public String getShelfLocation() {return shelfLocation;}
-    public int getTotalCopies() {return totalCopies;}
-    public int getAvailableCopies() {return availableCopies;}
+    public final String getShelfLocation() {return shelfLocation;}
+    public final int getTotalCopies() {return totalCopies;}
+    public final int getAvailableCopies() {return availableCopies;}
 
     // Abstract Book Methods
     @Override
@@ -110,7 +115,7 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
     }
     @Override
     public String getQueue() {
-        StringBuilder sb = new StringBuilder("Reservation Queue for " + title + " | " + ISBN + "\n\n");
+        StringBuilder sb = new StringBuilder("Reservation Queue for " + getTitle() + " | " + getISBN() + "\n\n");
         for (Member m : reservationQueue) {
             sb.append(m.toString());
             sb.append("\n");

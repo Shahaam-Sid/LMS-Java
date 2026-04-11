@@ -5,14 +5,19 @@ import com.library.enums.BookType;
 import java.time.Year;
 import java.util.Objects;
 
+/**
+ * Abstract Class for Book
+ * 
+ * @author Muhammad Shahaam Siddiqui
+ */
 public abstract class AbstractBook {
-    protected String ISBN;
-    protected String title;
-    protected String author;
-    protected String genre;
-    protected int publishedYear;
-    protected BookStatus status;
-    protected BookType type;
+    private String ISBN;
+    private String title;
+    private String author;
+    private String genre;
+    private int publishedYear;
+    private BookStatus status;
+    private BookType type;
 
     public AbstractBook(String ISBN, String title, String author, String genre,
         int publishedYear, BookType type) {
@@ -24,34 +29,44 @@ public abstract class AbstractBook {
             setType(type);
         }
 
+    // abstract methods
+    /**
+     * checks if book is available
+     * @return true if available else false
+     */
     public abstract boolean isAvailable();
+    /**
+     * calculates late fee
+     * @param daysLate int number of days
+     * @return double late fee
+     */
     public abstract double calculateLateFee(int daysLate);
 
     // setter
-    public final void setISBN(String ISBN) {
+    public final void setISBN(String ISBN) throws IllegalArgumentException {
         checkNullString(ISBN, "ISBN");
         if (!isValidISBN(ISBN)) throw new IllegalArgumentException(ISBN + " Invalid ISBN Format");
         this.ISBN = ISBN;
     }
-    public final void setTitle(String title) {
+    public final void setTitle(String title) throws IllegalArgumentException {
         checkNullString(title, "Book Title");
         checkLengthString(title, 3, 50, "Title");
 
         this.title = title;
     }
-    public final void setAuthor(String author) {
+    public final void setAuthor(String author) throws IllegalArgumentException {
         checkNullString(author, "Author");
         checkLengthString(author, 3, 50, "Author");
 
         this.author = author;
     }
-    public final void setGenre(String genre) {
+    public final void setGenre(String genre) throws IllegalArgumentException {
         checkNullString(genre, "Genre");
         checkLengthString(genre, 3, 20, "Genre");
     
         this.genre = genre;
     }
-    public final void setPublishedYear(int year) {
+    public final void setPublishedYear(int year) throws IllegalArgumentException {
         if (year < -699 || year > Year.now().getValue())
             throw new IllegalArgumentException("Invalid Year of Publish");
 

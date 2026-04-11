@@ -3,9 +3,14 @@ package com.library.models;
 import com.library.interfaces.Searchable;
 import java.util.Objects;
 
+/**
+ * A class for Admin object
+ * 
+ * @author Muhammad Shahaam Siddiqui
+ */
 public class Admin extends AbstractPupil implements Searchable {
 
-    protected String workerID;
+    private String workerID;
 
     public Admin(String workerID, String name, String phone, String email, String address, int age) {
         super(name, phone, email, address, age);
@@ -13,8 +18,8 @@ public class Admin extends AbstractPupil implements Searchable {
     }
 
     // setter
-    public final void setWorkerID(String workerID) {
-        checkID(workerID, "Worker ID");
+    public final void setWorkerID(String workerID) throws IllegalArgumentException {
+        ValidationUtils.checkID(workerID, "Worker ID");
 
         this.workerID = workerID;
     }
@@ -27,9 +32,9 @@ public class Admin extends AbstractPupil implements Searchable {
     @Override
     public boolean matchesQuery(String query) {
         String q = query.toLowerCase();
-        return name.toLowerCase().contains(q) ||
-        workerID.toLowerCase().contains(q) ||
-        email.toLowerCase().contains(q);
+        return getName().toLowerCase().contains(q) ||
+        getWorkerID().toLowerCase().contains(q) ||
+        getEmail().toLowerCase().contains(q);
     }
     @Override
     public String toString() {

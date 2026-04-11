@@ -4,6 +4,11 @@ import com.library.enums.BookType;
 import com.library.interfaces.Searchable;
 import java.util.Objects;
 
+/**
+ * class for EBook objects
+ * 
+ * @author Muhammad Shahaam Siddiqui
+ */
 public class EBook extends AbstractDigitalBook implements Searchable {
     
     public EBook(String ISBN, String title, String author, String genre,
@@ -20,7 +25,7 @@ public class EBook extends AbstractDigitalBook implements Searchable {
         getAuthor().toLowerCase().contains(q) ||
         getISBN().toLowerCase().contains(q) ||
         getGenre().toLowerCase().contains(q) ||
-        format.toLowerCase().contains(q);
+        getFormat().toLowerCase().contains(q);
     }
 
     @Override
@@ -29,11 +34,11 @@ public class EBook extends AbstractDigitalBook implements Searchable {
         if (!(other instanceof EBook)) return false;
 
         EBook otherBook = (EBook) other;
-        return (ISBN.equals(otherBook.ISBN) && type.equals(otherBook.type) &&
-        format.equals(otherBook.format) && fileSizeMB == otherBook.fileSizeMB);
+        return (getISBN().equals(otherBook.getISBN()) && getType().equals(otherBook.getType()) &&
+        getFormat().equals(otherBook.getFormat()) && getFileSizeMB() == otherBook.getFileSizeMB());
     }
     @Override
     public int hashCode() {
-        return Objects.hash(ISBN, type, format, fileSizeMB);
+        return Objects.hash(getISBN(), getType(), getFormat(), getFileSizeMB());
     }
 }

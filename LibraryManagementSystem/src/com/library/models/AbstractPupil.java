@@ -9,11 +9,11 @@ import com.library.interfaces.Pupil;
  */
 public abstract class AbstractPupil implements Pupil{
 
-    protected String name;
-    protected String phone;
-    protected String email;
-    protected String address;
-    protected int age;
+    private String name;
+    private String phone;
+    private String email;
+    private String address;
+    private int age;
 
     public AbstractPupil(String name, String phone, String email, String address, int age) {
         setName(name);
@@ -25,8 +25,8 @@ public abstract class AbstractPupil implements Pupil{
 
     // Setters
     public final void setName(String name) throws IllegalArgumentException {
-        checkNullString(name, "Name");
-        checkLengthString(name, 5, 35, "Name");
+        ValidationUtils.checkNullString(name, "Name");
+        ValidationUtils.checkLengthString(name, 5, 35, "Name");
 
         for (char c : name.toUpperCase().toCharArray()) {
             
@@ -37,8 +37,8 @@ public abstract class AbstractPupil implements Pupil{
         this.name = name;
     }
     public final void setPhone(String phone) throws IllegalArgumentException {
-        checkNullString(phone, "Phone Number");
-        checkLengthString(phone, 11, 11, "Phone Number");
+        ValidationUtils.checkNullString(phone, "Phone Number");
+        ValidationUtils.checkLengthString(phone, 11, 11, "Phone Number");
 
         for (char c : phone.toCharArray()) {
             if (c < '0' || c > '9')
@@ -47,7 +47,7 @@ public abstract class AbstractPupil implements Pupil{
         this.phone = phone;
     }
     public final void setEmail(String email) throws IllegalArgumentException {
-        checkNullString(email, "Email Address");
+        ValidationUtils.checkNullString(email, "Email Address");
         
         String regex = "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$";
         
@@ -56,8 +56,8 @@ public abstract class AbstractPupil implements Pupil{
         this.email = email;
     }
     public final void setAddress(String address) {
-        checkNullString(address, "Address");
-        checkLengthString(address, 5, 55, "Address");
+        ValidationUtils.checkNullString(address, "Address");
+        ValidationUtils.checkLengthString(address, 5, 55, "Address");
 
         this.address = address;
     }
@@ -80,41 +80,5 @@ public abstract class AbstractPupil implements Pupil{
             "Email: " + email + "\n" +
             "Address: " + address + "\n" +
             "Age: " + age + "\n";
-    }
-
-    /**
-     * a static helper method to check for empty strings
-     * @param string 
-     * @param field field of information
-     * @throws IllegalArgumentException if string is null or length is 0 or only contains whitespaces
-     */
-    protected static void checkNullString(String string, String field) throws IllegalArgumentException {
-        if (string == null || string.trim().length() == 0)
-            throw new IllegalArgumentException("Invalid " + field);
-    }
-    /**
-     * a static helper method to check to validate length of strings
-     * @param string
-     * @param lengthMin minimun acceptable length
-     * @param lengthMax maximum acceptable length
-     * @param field field of information
-     * @throws IllegalArgumentException if length is not in acceptable range
-     */
-    protected static void checkLengthString(String string, int lengthMin, int lengthMax, String field) throws IllegalArgumentException {
-        if (string.length() < lengthMin || string.length() > lengthMax)
-            throw new IllegalArgumentException("Allowed Length for " + field + ": " + lengthMin + " - " + lengthMax);
-    }
-    /**
-     * method to check and validate ID
-     * @param id
-     * @param field field, Member ID or Worker ID
-     */
-    protected static void checkID(String id, String field) {
-        checkNullString(id, field);
-        checkLengthString(id, 9, 9, field);
-
-        for (char c : id.toCharArray())
-            if (!Character.isLetterOrDigit(c))
-                throw new IllegalArgumentException("Invalid " + field);
     }
 }

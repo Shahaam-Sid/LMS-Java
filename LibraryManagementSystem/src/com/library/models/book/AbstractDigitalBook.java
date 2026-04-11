@@ -5,11 +5,16 @@ import com.library.interfaces.Borrowable;
 import com.library.models.Member;
 import java.time.LocalDate;
 
+/**
+ * Abstract class for digital books
+ * 
+ * @author Muhammad Shahaam Siddiqui
+ */
 public abstract class AbstractDigitalBook extends AbstractBook implements Borrowable{
 
-    protected String downloadURL;
-    protected String format;
-    protected double fileSizeMB;
+    private String downloadURL;
+    private String format;
+    private double fileSizeMB;
 
     public AbstractDigitalBook(String ISBN, String title, String author, String genre,
         int publishedYear, BookType bookType, String downloadURL, String format) {
@@ -21,13 +26,13 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
         }
 
     // setter
-    public final void setDownloadURL(String url) {
+    public final void setDownloadURL(String url) throws IllegalArgumentException {
         checkNullString(url, "Download URL");
         checkLengthString(url, 15, 2000, "Download URL");
 
         this.downloadURL = url;
     }
-    public final void setFormat(String format) {
+    public final void setFormat(String format) throws IllegalArgumentException {
         checkNullString(format, "File Format");
         checkLengthString(format, 3, 30, "File Format");
 
@@ -37,6 +42,7 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
     // getter
     public final String getDownloadURL() {return downloadURL;}
     public final String getFormat() {return format;}
+    public final double getFileSizeMB() {return fileSizeMB;}
 
     // Abstract Book methods
     @Override
@@ -56,12 +62,12 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
 
     @Override
     public String toString() {
-        return "ISBN: " + ISBN + "\n" +
-        "Title: " + title + "\n" +
-        "Author: " + author + "\n" +
-        "Genre: " + genre + "\n" +
-        "Published Year: " + publishedYear + "\n" +
-        "Type: " + type.name() + "\n" + 
+        return "ISBN: " + getISBN() + "\n" +
+        "Title: " + getTitle() + "\n" +
+        "Author: " + getAuthor() + "\n" +
+        "Genre: " + getGenre() + "\n" +
+        "Published Year: " + getPublishedYear() + "\n" +
+        "Type: " + getType() + "\n" + 
         "Format: " + format + "\n" +
         "File Size (MBs): " + fileSizeMB + "\n";
     }

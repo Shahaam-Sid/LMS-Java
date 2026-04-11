@@ -6,11 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A class for Member Object
+ * 
+ * @author Muhammad Shahaam Siddiqui
+ */
 public class Member extends AbstractPupil implements Searchable {
 
-    protected String memberID;
-    protected MemberStatus status;
-    protected List<Transaction> borrowedTransaction;
+    private String memberID;
+    private MemberStatus status;
+    private List<Transaction> borrowedTransaction;
 
     public static final int MAX_BORROW_LIMIT = 3;
 
@@ -22,13 +27,13 @@ public class Member extends AbstractPupil implements Searchable {
     }
 
     // setter
-    public final void setMemberID(String memberID) {
-        checkID(memberID, "Member ID");
+    public final void setMemberID(String memberID) throws IllegalArgumentException {
+        ValidationUtils.checkID(memberID, "Member ID");
 
         this.memberID = memberID;
     }
     //getter
-    public String getWorkerID() {return memberID;}
+    public String getMemberID() {return memberID;}
 
     /**
      * checks if member has borrow's left
@@ -64,9 +69,9 @@ public class Member extends AbstractPupil implements Searchable {
     @Override
     public boolean matchesQuery(String query) {
         String q = query.toLowerCase();
-        return name.toLowerCase().contains(q) ||
-        memberID.toLowerCase().contains(q) ||
-        email.toLowerCase().contains(q);
+        return getName().toLowerCase().contains(q) ||
+        getMemberID().toLowerCase().contains(q) ||
+        getEmail().toLowerCase().contains(q);
     }
     @Override
     public String toString() {
