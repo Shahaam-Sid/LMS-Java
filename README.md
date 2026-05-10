@@ -4,6 +4,7 @@ A Library Management System Software
 
 ### Project Structure
 
+```
 LMS-Java
 │   .gitignore
 │   README.md
@@ -46,7 +47,12 @@ LMS-Java
                 │           EBook.java
                 │           PhysicalBook.java
                 │
-                └───services
-                        BookServices.java
-                        MemberServices.java
-                        TransactionServices.java
+                ├───services
+                │       BookServices.java
+                │       MemberServices.java
+                │       TransactionServices.java
+                │       WorkerServices.java
+                │
+                └───ui
+                        LibraryMenu.java
+``

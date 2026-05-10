@@ -50,6 +50,7 @@ public class MemberServices {
 
         members.remove(id);
     }
+    
     /**
      * searches for member
      * @param query string for member to search
