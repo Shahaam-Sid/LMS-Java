@@ -15,7 +15,7 @@ public class Member extends AbstractPupil implements Searchable {
 
     private String memberID;
     private MemberStatus status;
-    private List<Transaction> borrowedTransaction;
+    private final List<Transaction> borrowedTransaction;
 
     public static final int MAX_BORROW_LIMIT = 3;
 

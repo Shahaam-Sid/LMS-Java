@@ -25,6 +25,7 @@ public abstract class AbstractBook {
             setTitle(title);
             setAuthor(author);
             setGenre(genre);
+            setPublishedYear(publishedYear);
             setStatus(BookStatus.AVAILABLE);
             setType(type);
         }
@@ -131,34 +132,40 @@ public abstract class AbstractBook {
             throw new IllegalArgumentException("Allowed Length for " + field + ": " + lengthMin + " - " + lengthMax);
     }
     protected static boolean isValidISBN(String isbn) {
-        // length must be 10
         int n = isbn.length();
-        if (n != 10)
-            return false;
 
-        // Computing weighted sum
-        // of first 9 digits
-        int sum = 0;
-        for (int i = 0; i < 9; i++) 
-        {
-        int digit = isbn.charAt(i) - '0';
-            if (0 > digit || 9 < digit)
-                return false;
-            sum += (digit * (10 - i));
+        if (n == 10) {
+            return isValidISBN10(isbn);
+        } else if (n == 13) {
+            return isValidISBN13(isbn);
         }
-
-        // Checking last digit.
+        return false;
+    }
+    private static boolean isValidISBN10(String isbn) {
+        int sum = 0;
+        for (int i = 0; i < 9; i++) {
+            int digit = isbn.charAt(i) - '0';
+            if (digit < 0 || digit > 9)
+                return false;
+            sum += digit * (10 - i);
+        }
         char last = isbn.charAt(9);
-        if (last != 'X' && (last < '0' || 
-                            last > '9'))
+        if (last != 'X' && (last < '0' || last > '9'))
             return false;
-
-        // If last digit is 'X', add 10 
-        // to sum, else add its value
-        sum += ((last == 'X') ? 10 : (last - '0'));
-
-        // Return true if weighted sum 
-        // of digits is divisible by 11.
-        return (sum % 11 == 0);
+        sum += (last == 'X') ? 10 : (last - '0');
+        return sum % 11 == 0;
+    }
+    private static boolean isValidISBN13(String isbn) {
+        int sum = 0;
+        for (int i = 0; i < 12; i++) {
+            int digit = isbn.charAt(i) - '0';
+            if (digit < 0 || digit > 9)
+                return false;
+            sum += (i % 2 == 0) ? digit : digit * 3; // alternating weights 1 and 3
+        }
+        int checkDigit = isbn.charAt(12) - '0';
+        if (checkDigit < 0 || checkDigit > 9)
+            return false;
+        return (sum + checkDigit) % 10 == 0;
     }
 }

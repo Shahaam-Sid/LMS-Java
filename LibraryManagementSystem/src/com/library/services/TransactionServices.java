@@ -20,10 +20,10 @@ import java.util.UUID;
  */
 public class TransactionServices {
 
-    private List<Transaction> transactions = new ArrayList<>();
+    private final List<Transaction> transactions = new ArrayList<>();
 
-    private BookServices bookService;
-    private MemberServices memberService;
+    private final BookServices bookService;
+    private final MemberServices memberService;
 
     public TransactionServices(BookServices bookService, MemberServices memberService) {
         this.bookService = bookService;

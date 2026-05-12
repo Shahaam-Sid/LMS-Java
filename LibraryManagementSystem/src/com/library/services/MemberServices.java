@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class MemberServices {
 
-    private Map<String, Member> members = new HashMap<>();
+    private final Map<String, Member> members = new HashMap<>();
 
     /**
      * registers new member

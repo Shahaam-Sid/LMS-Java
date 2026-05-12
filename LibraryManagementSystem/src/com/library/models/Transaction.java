@@ -53,7 +53,7 @@ public class Transaction {
         this.dueDate = dueDate;
     }
     public final void setReturnDate(LocalDate returnDate) throws IllegalArgumentException {
-        if (dueDate.isBefore(returnDate))
+        if (returnDate != null && returnDate.isBefore(borrowDate))
             throw new IllegalArgumentException("Return Date cannot be before Borrow Date");
 
         this.returnDate = returnDate;

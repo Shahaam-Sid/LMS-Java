@@ -15,7 +15,12 @@ import java.util.Map;
  */
 public class WorkerServices {
 
-    private Map<String, Admin> workers = new HashMap<>();
+    private final Map<String, Admin> workers = new HashMap<>();
+    /**
+     * Checks if list is empty
+     * @return true if empty, else not
+     */
+    public boolean isEmpty() {return workers.isEmpty();}
 
     /**
      * register new member

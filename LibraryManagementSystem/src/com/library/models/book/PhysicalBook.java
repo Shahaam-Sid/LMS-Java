@@ -20,21 +20,21 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
     private String shelfLocation;
     private int totalCopies;
     private int availableCopies;
-    private Queue<Member> reservationQueue;
+    private final Queue<Member> reservationQueue;
 
     public PhysicalBook(String ISBN, String title, String author, String genre,
         int publishedYear, String shelfLocation, int totalCopies) {
             super(ISBN, title, author, genre, publishedYear, BookType.PHYSICAL);
             setShelfLocation(shelfLocation);
             setTotalCopies(totalCopies);
-            setAvailableCopies(availableCopies);
+            setAvailableCopies(totalCopies);
             this.reservationQueue = new LinkedList<>();
         }
 
     // setter
     public final void setShelfLocation(String shelfLocation) throws IllegalArgumentException {
         checkNullString(shelfLocation, "Shelf Location");
-        checkLengthString(shelfLocation, 5, 25, "Shelf Location");
+        checkLengthString(shelfLocation, 1, 25, "Shelf Location");
 
         this.shelfLocation = shelfLocation;
     }
@@ -45,7 +45,7 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
     }
     public final void setAvailableCopies(int availableCopies) throws IllegalArgumentException {
         if (availableCopies < 0 || availableCopies > totalCopies) 
-            throw new IllegalArgumentException("Available Copies must atleast 0 and lesser then total copies");
+            throw new IllegalArgumentException("Available Copies must atleast 0 and lesseror equals to total copies");
     
         this.availableCopies = availableCopies;
     }

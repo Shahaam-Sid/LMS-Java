@@ -14,9 +14,9 @@ public class AudioBook extends AbstractDigitalBook implements Searchable{
     private String narrator;
 
     public AudioBook(String ISBN, String title, String author, String genre,
-        int publishedYear, String downloadURL, String format, String narrator) {
+        int publishedYear, String downloadURL, String format, double fileSizeMB, String narrator) {
 
-            super(ISBN, title, author, genre, publishedYear, BookType.AUDIOBOOK, downloadURL, format);
+            super(ISBN, title, author, genre, publishedYear, BookType.AUDIOBOOK, downloadURL, format, fileSizeMB);
 
             setNarrator(narrator);
     }

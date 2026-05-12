@@ -17,12 +17,13 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
     private double fileSizeMB;
 
     public AbstractDigitalBook(String ISBN, String title, String author, String genre,
-        int publishedYear, BookType bookType, String downloadURL, String format) {
+        int publishedYear, BookType bookType, String downloadURL, String format, double fileSizeMB) {
 
             super(ISBN, title, author, genre, publishedYear, bookType);
 
             setDownloadURL(downloadURL);
             setFormat(format);
+            setFileSizeMB(fileSizeMB);
         }
 
     // setter
@@ -37,6 +38,11 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
         checkLengthString(format, 3, 30, "File Format");
 
         this.format = format;
+    }
+    public final void setFileSizeMB(double fileSizeMB) throws IllegalArgumentException {
+        if (fileSizeMB <= 0) throw new IllegalArgumentException("File must be bigger then ) mbs");
+        
+        this.fileSizeMB = fileSizeMB;
     }
 
     // getter

@@ -12,9 +12,9 @@ import java.util.Objects;
 public class EBook extends AbstractDigitalBook implements Searchable {
     
     public EBook(String ISBN, String title, String author, String genre,
-        int publishedYear, String downloadURL, String format) {
+        int publishedYear, String downloadURL, String format, double fileSizeMB) {
 
-            super(ISBN, title, author, genre, publishedYear, BookType.EBOOK, downloadURL, format);
+            super(ISBN, title, author, genre, publishedYear, BookType.EBOOK, downloadURL, format, fileSizeMB);
         }
 
     // Searchable methods
