@@ -113,6 +113,8 @@ LibraryManagementSystem/
 
 ## 🏛️ Architecture
 
+[**Documentation and UMLs**](./LibraryManagementSystem/docs/architecture.md)
+
 ### Design Patterns Used
 
 1. **Abstract Class Pattern**: `AbstractBook` and `AbstractDigitalBook` for code reuse and common functionality
