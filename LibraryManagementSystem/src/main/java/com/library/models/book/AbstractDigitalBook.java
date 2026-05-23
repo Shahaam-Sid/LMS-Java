@@ -1,9 +1,11 @@
 package com.library.models.book;
 
+import java.time.LocalDate;
+
 import com.library.enums.BookType;
 import com.library.interfaces.Borrowable;
 import com.library.models.Member;
-import java.time.LocalDate;
+import com.library.models.ValidationUtils;
 
 /**
  * Abstract class for digital books
@@ -28,14 +30,14 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
 
     // setter
     public final void setDownloadURL(String url) throws IllegalArgumentException {
-        checkNullString(url, "Download URL");
-        checkLengthString(url, 15, 2000, "Download URL");
+        ValidationUtils.checkNullString(url, "Download URL");
+        ValidationUtils.checkLengthString(url, 15, 2000, "Download URL");
 
         this.downloadURL = url;
     }
     public final void setFormat(String format) throws IllegalArgumentException {
-        checkNullString(format, "File Format");
-        checkLengthString(format, 3, 30, "File Format");
+        ValidationUtils.checkNullString(format, "File Format");
+        ValidationUtils.checkLengthString(format, 3, 30, "File Format");
 
         this.format = format;
     }

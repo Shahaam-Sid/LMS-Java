@@ -7,7 +7,7 @@ public class ValidationUtils {
      * @param field field of information
      * @throws IllegalArgumentException if string is null or length is 0 or only contains whitespaces
      */
-    static void checkNullString(String string, String field) throws IllegalArgumentException {
+    public static void checkNullString(String string, String field) throws IllegalArgumentException {
         if (string == null || string.trim().length() == 0)
             throw new IllegalArgumentException("Invalid " + field);
     }
@@ -19,7 +19,7 @@ public class ValidationUtils {
      * @param field field of information
      * @throws IllegalArgumentException if length is not in acceptable range
      */
-    static void checkLengthString(String string, int lengthMin, int lengthMax, String field) throws IllegalArgumentException {
+    public static void checkLengthString(String string, int lengthMin, int lengthMax, String field) throws IllegalArgumentException {
         if (string.length() < lengthMin || string.length() > lengthMax)
             throw new IllegalArgumentException("Allowed Length for " + field + ": " + lengthMin + " - " + lengthMax);
     }
@@ -29,7 +29,7 @@ public class ValidationUtils {
      * @param field field, Member ID or Worker ID
      * @throws IllegalArgumentException if ID is not valid
      */
-    static void checkID(String id, String field) throws IllegalArgumentException {
+    public static void checkID(String id, String field) throws IllegalArgumentException {
         checkNullString(id, field);
         checkLengthString(id, 9, 9, field);
 

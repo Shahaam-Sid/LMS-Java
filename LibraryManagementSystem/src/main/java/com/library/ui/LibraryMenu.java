@@ -1,5 +1,8 @@
 package com.library.ui;
 
+import java.util.List;
+import java.util.Scanner;
+
 import com.library.exceptions.BookNotAvailableException;
 import com.library.exceptions.BookNotFoundException;
 import com.library.exceptions.DuplicateISBNException;
@@ -20,8 +23,6 @@ import com.library.services.BookServices;
 import com.library.services.MemberServices;
 import com.library.services.TransactionServices;
 import com.library.services.WorkerServices;
-import java.util.List;
-import java.util.Scanner;
 
 public class LibraryMenu {
     private final BookServices bookServices;
@@ -52,7 +53,7 @@ public class LibraryMenu {
             System.out.println("1.Log in \n0. Exit");
             int choice = readInt("Enter Choice > ");
             switch (choice) {
-                case 1:
+                case 1 -> {
                     try {
                         String workerID = readString("Worker ID: ");
                         Admin worker = workerServices.getWorker(workerID);
@@ -68,13 +69,8 @@ public class LibraryMenu {
                     } catch (Exception e) {
                         System.out.println("Error: " + e.getMessage());
                     }
-                    break;
-                case 0:
-                    inMenu = false;
-                    break;
-                default:
-                    System.out.println("Invalid Choice, Try Again");
-                    break;
+                } case 0 -> inMenu = false;
+                default -> System.out.println("Invalid Choice, Try Again");
             }
         }
         System.out.println("PROGRAM ENDED");
@@ -96,35 +92,24 @@ public class LibraryMenu {
                 int choice = readInt("Enter Choice > ");
 
                 switch (choice) {
-                    case 1:
+                    case 1 -> {
                         printBookMenu();
                         bookMenu();
-                        break;
-                    case 2:
+                    } case 2 -> {
                         printMemberMenu();
                         memberMenu();
-                        break;
-                    case 3:
+                    } case 3 -> {
                         printTransactionMenu();
                         transactionMenu();
-                        break;
-                    case 4:
+                    } case 4 -> {
                         printSearchMenu();
                         searchMenu();
-                        break;
-                    case 5:
+                    } case 5 -> {
                         printWorkerMenu();
                         workerMenu();
-                        break;
-                    case 9:
-                        printMainMenu();
-                        break;
-                    case 0:
-                        running = false;
-                        break;
-                    default:
-                        System.out.println("Invalid Choice, Try Again");
-                        break;
+                    } case 9 -> printMainMenu();
+                    case 0 -> running = false;
+                    default ->System.out.println("Invalid Choice, Try Again");
                 }
             } catch (Exception e) {System.out.println("Error: " + e.getMessage());}
         }

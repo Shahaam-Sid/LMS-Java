@@ -1,9 +1,11 @@
 package com.library.models.book;
 
-import com.library.enums.BookStatus;
-import com.library.enums.BookType;
 import java.time.Year;
 import java.util.Objects;
+
+import com.library.enums.BookStatus;
+import com.library.enums.BookType;
+import com.library.models.ValidationUtils;
 
 /**
  * Abstract Class for Book
@@ -45,25 +47,25 @@ public abstract class AbstractBook {
 
     // setter
     public final void setISBN(String ISBN) throws IllegalArgumentException {
-        checkNullString(ISBN, "ISBN");
+        ValidationUtils.checkNullString(ISBN, "ISBN");
         if (!isValidISBN(ISBN)) throw new IllegalArgumentException(ISBN + " Invalid ISBN Format");
         this.ISBN = ISBN;
     }
     public final void setTitle(String title) throws IllegalArgumentException {
-        checkNullString(title, "Book Title");
-        checkLengthString(title, 3, 50, "Title");
+        ValidationUtils.checkNullString(title, "Book Title");
+        ValidationUtils.checkLengthString(title, 3, 50, "Title");
 
         this.title = title;
     }
     public final void setAuthor(String author) throws IllegalArgumentException {
-        checkNullString(author, "Author");
-        checkLengthString(author, 3, 50, "Author");
+        ValidationUtils.checkNullString(author, "Author");
+        ValidationUtils.checkLengthString(author, 3, 50, "Author");
 
         this.author = author;
     }
     public final void setGenre(String genre) throws IllegalArgumentException {
-        checkNullString(genre, "Genre");
-        checkLengthString(genre, 3, 20, "Genre");
+        ValidationUtils.checkNullString(genre, "Genre");
+        ValidationUtils.checkLengthString(genre, 3, 20, "Genre");
     
         this.genre = genre;
     }
@@ -108,29 +110,6 @@ public abstract class AbstractBook {
         return Objects.hash(ISBN, type);
     }
 
-    // helper method
-    /**
-     * a static helper method to check for empty strings
-     * @param string 
-     * @param field field of information
-     * @throws IllegalArgumentException if string is null or length is 0 or only contains whitespaces
-     */
-    protected static void checkNullString(String string, String field) throws IllegalArgumentException {
-        if (string == null || string.trim().length() == 0)
-            throw new IllegalArgumentException("Invalid " + field);
-    }
-    /**
-     * a static helper method to check to validate length of strings
-     * @param string
-     * @param lengthMin minimun acceptable length
-     * @param lengthMax maximum acceptable length
-     * @param field field of information
-     * @throws IllegalArgumentException if length is not in acceptable range
-     */
-    protected static void checkLengthString(String string, int lengthMin, int lengthMax, String field) throws IllegalArgumentException {
-        if (string.length() < lengthMin || string.length() > lengthMax)
-            throw new IllegalArgumentException("Allowed Length for " + field + ": " + lengthMin + " - " + lengthMax);
-    }
     protected static boolean isValidISBN(String isbn) {
         int n = isbn.length();
 

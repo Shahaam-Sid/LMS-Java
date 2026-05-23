@@ -1,15 +1,16 @@
 package com.library.models.book;
 
-import com.library.enums.BookType;
-import com.library.interfaces.Searchable;
 import java.util.Objects;
+
+import com.library.enums.BookType;
+import com.library.models.ValidationUtils;
 
 /**
  * class for AudioBook objects
  * 
  * @author Muhammad Shahaam Siddiqui
  */
-public class AudioBook extends AbstractDigitalBook implements Searchable{
+public class AudioBook extends AbstractDigitalBook{
     
     private String narrator;
 
@@ -23,25 +24,14 @@ public class AudioBook extends AbstractDigitalBook implements Searchable{
     
     // setter
     public final void setNarrator(String narrator) throws IllegalArgumentException {
-        checkNullString(narrator, "Narrator");
-        checkLengthString(narrator, 3, 100, "Narrator");
+        ValidationUtils.checkNullString(narrator, "Narrator");
+        ValidationUtils.checkLengthString(narrator, 3, 100, "Narrator");
 
         this.narrator = narrator;
     }
         
     // getter
     public final String getNarrator() {return narrator;}
-
-    // Searchable methods
-    @Override
-    public boolean matchesQuery(String query) {
-        String q = query.toLowerCase();
-        return getTitle().toLowerCase().contains(q) ||
-        getAuthor().toLowerCase().contains(q) ||
-        getISBN().toLowerCase().contains(q) ||
-        getGenre().toLowerCase().contains(q) ||
-        narrator.toLowerCase().contains(q);
-    }
 
     @Override
     public String toString() {
@@ -59,6 +49,6 @@ public class AudioBook extends AbstractDigitalBook implements Searchable{
     }
     @Override
     public int hashCode() {
-        return Objects.hash(getISBN(), getType(), getFormat(), narrator, getFileSizeMB());
+        return Objects.hash(getISBN(), getType(), getFormat(), getNarrator(), getFileSizeMB());
     }
 }

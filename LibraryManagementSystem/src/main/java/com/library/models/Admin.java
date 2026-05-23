@@ -1,22 +1,25 @@
 package com.library.models;
 
-import com.library.exceptions.InvalidPasswordException;
-import com.library.interfaces.Searchable;
 import java.util.Objects;
+
+import com.library.exceptions.InvalidPasswordException;
 
 /**
  * A class for Admin object
  * 
  * @author Muhammad Shahaam Siddiqui
  */
-public class Admin extends AbstractPupil implements Searchable {
+public class Admin extends AbstractPupil {
 
     private String workerID;
-    private String[] saltNHash;
-
-    public Admin(String workerID, String name, String phone, String email, String address, int age, String password) throws Exception {
+    private String[] saltNHash = new String[2];
+    
+    public Admin(String workerID, String name, String phone, String email, String address, int age) {
         super(name, phone, email, address, age);
         setWorkerID(workerID);
+    }
+    public Admin(String workerID, String name, String phone, String email, String address, int age, String password) throws Exception {
+        this(workerID, name, phone, email, address, age);
         setPassword(password);
     }
 
@@ -30,6 +33,12 @@ public class Admin extends AbstractPupil implements Searchable {
         PasswordUtils.validate(password);
         saltNHash = PasswordUtils.hashPassword(password);
     }
+    public final void setSalt(String salt) {
+        saltNHash[0] = salt;
+    }
+    public final void setHash(String hash) {
+        saltNHash[1] = hash;
+    }
     
     //getter
     public String getWorkerID() {return workerID;}
@@ -38,13 +47,7 @@ public class Admin extends AbstractPupil implements Searchable {
 
     @Override
     public boolean isAdmin() {return true;}
-    @Override
-    public boolean matchesQuery(String query) {
-        String q = query.toLowerCase();
-        return getName().toLowerCase().contains(q) ||
-        getWorkerID().toLowerCase().contains(q) ||
-        getEmail().toLowerCase().contains(q);
-    }
+
     @Override
     public String toString() {
         return "Worker ID: " + workerID + "\n" + super.toString();
@@ -62,3 +65,4 @@ public class Admin extends AbstractPupil implements Searchable {
         return Objects.hash(workerID);
     }
 }
+// => Add auto id generator

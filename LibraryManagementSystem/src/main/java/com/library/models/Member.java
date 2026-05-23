@@ -1,17 +1,16 @@
 package com.library.models;
 
-import com.library.enums.MemberStatus;
-import com.library.interfaces.Searchable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.library.enums.MemberStatus;
 /**
  * A class for Member Object
  * 
  * @author Muhammad Shahaam Siddiqui
  */
-public class Member extends AbstractPupil implements Searchable {
+public class Member extends AbstractPupil {
 
     private String memberID;
     private MemberStatus status;
@@ -22,7 +21,7 @@ public class Member extends AbstractPupil implements Searchable {
     public Member(String memberID, String name, String phone, String email, String address, int age) {
         super(name, phone, email, address, age);
         setMemberID(memberID);
-        this.status = MemberStatus.ACTIVE;
+        setStatus(MemberStatus.ACTIVE);
         this.borrowedTransaction = new ArrayList<>();
     }
 
@@ -32,8 +31,10 @@ public class Member extends AbstractPupil implements Searchable {
 
         this.memberID = memberID;
     }
+    public final void setStatus(MemberStatus status) {this.status = status;}
     //getter
     public String getMemberID() {return memberID;}
+    public String getStatus() {return status.name();}
 
     /**
      * checks if member has borrow's left
@@ -67,13 +68,6 @@ public class Member extends AbstractPupil implements Searchable {
     @Override
     public boolean isAdmin() {return false;}
     @Override
-    public boolean matchesQuery(String query) {
-        String q = query.toLowerCase();
-        return getName().toLowerCase().contains(q) ||
-        getMemberID().toLowerCase().contains(q) ||
-        getEmail().toLowerCase().contains(q);
-    }
-    @Override
     public String toString() {
         return "Member ID: " + memberID + "\n" + super.toString();
     }
@@ -90,3 +84,4 @@ public class Member extends AbstractPupil implements Searchable {
         return Objects.hash(memberID);
     }
 }
+// => Add auto id generator

@@ -1,21 +1,22 @@
 package com.library.models.book;
 
+import java.time.LocalDate;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import com.library.enums.BookStatus;
 import com.library.enums.BookType;
 import com.library.interfaces.Borrowable;
 import com.library.interfaces.Reservable;
-import com.library.interfaces.Searchable;
 import com.library.models.Member;
-import java.time.LocalDate;
-import java.util.LinkedList;
-import java.util.Queue;
+import com.library.models.ValidationUtils;
 
 /**
  * class for PhysicalBook objects
  * 
  * @author Muhammad Shahaam Siddiqui
  */
-public class PhysicalBook extends AbstractBook implements Searchable, Borrowable, Reservable {
+public class PhysicalBook extends AbstractBook implements Borrowable, Reservable {
 
     private String shelfLocation;
     private int totalCopies;
@@ -33,8 +34,8 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
 
     // setter
     public final void setShelfLocation(String shelfLocation) throws IllegalArgumentException {
-        checkNullString(shelfLocation, "Shelf Location");
-        checkLengthString(shelfLocation, 1, 25, "Shelf Location");
+        ValidationUtils.checkNullString(shelfLocation, "Shelf Location");
+        ValidationUtils.checkLengthString(shelfLocation, 1, 25, "Shelf Location");
 
         this.shelfLocation = shelfLocation;
     }
@@ -60,17 +61,6 @@ public class PhysicalBook extends AbstractBook implements Searchable, Borrowable
     public boolean isAvailable() {return availableCopies > 0;}
     @Override
     public double calculateLateFee(int daysLate) {return daysLate * 5.0;}
-
-    // Searchable methods
-    @Override
-    public boolean matchesQuery(String query) {
-        String q = query.toLowerCase();
-        return getTitle().toLowerCase().contains(q) ||
-        getAuthor().toLowerCase().contains(q) ||
-        getISBN().toLowerCase().contains(q) ||
-        getGenre().toLowerCase().contains(q) ||
-        shelfLocation.toLowerCase().contains(q);
-    }
 
     // Borrowable methods
     @Override
