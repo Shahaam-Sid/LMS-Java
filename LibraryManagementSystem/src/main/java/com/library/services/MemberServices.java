@@ -21,11 +21,14 @@ import com.library.models.Member;
  */
 public class MemberServices {
 
+    private static final String TABLE = "members";
+    private static final String UIDCOL = "member_id";
+
     /**
      * Checks if database is empty
      * @return true if empty, else not
      */
-    public boolean isEmpty() {return DBUtility.isEmpty("members");}
+    public boolean isEmpty() {return DBUtility.isEmpty(TABLE);}
     /**
      * registers new member
      * @param member to register
@@ -36,12 +39,8 @@ public class MemberServices {
     public void registerMember(Member member) throws DuplicatePupilException {
         
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT member_id FROM members WHERE member_id = ?")) {
-                ps.setString(1, member.getMemberID());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) throw new DuplicatePupilException(member.getMemberID());
-                }
-            }
+            if (DBUtility.doesRowExists(TABLE, UIDCOL, member.getMemberID(), conn))
+                throw new DuplicatePupilException(member.getMemberID());
             try (PreparedStatement ps = conn.prepareCall("INSERT INTO members VALUES (?, ?, ?, ?, ?, ?, ?)")) {
                 ps.setString(1, member.getMemberID());
                 ps.setString(2, member.getName());
@@ -78,6 +77,84 @@ public class MemberServices {
         }
         throw new MemberNotFoundException(id);
     }
+    public void updateMember(String targetId, String name, String phone, String email, String address,
+        String status) throws MemberNotFoundException, IllegalArgumentException {
+            Member member = getMember(targetId);
+
+            try (Connection conn = DBConnection.getConnection()) {
+                int rowsAffected = 0;
+                int countChangesMade = 0;
+                try {
+                    conn.setAutoCommit(false);
+
+                    if ((name != null && !name.isEmpty()) && !name.equals(member.getName())) {
+                        countChangesMade++;
+                        member.setName(name);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE members SET member_name = ? WHERE member_id = ?")) {
+                            ps.setString(1, member.getName());
+                            ps.setString(2, member.getMemberID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((phone != null && !phone.isEmpty()) && !phone.equals(member.getPhone())) {
+                        countChangesMade++;
+                        member.setPhone(phone);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE members SET phone = ? WHERE member_id = ?")) {
+                            ps.setString(1, member.getPhone());
+                            ps.setString(2, member.getMemberID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((email != null && !email.isEmpty()) && !email.equals(member.getEmail())) {
+                        countChangesMade++;
+                        member.setEmail(email);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE members SET email = ? WHERE member_id = ?")) {
+                            ps.setString(1, member.getEmail());
+                            ps.setString(2, member.getMemberID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((address != null && !address.isEmpty()) && !address.equals(member.getAddress())) {
+                        countChangesMade++;
+                        member.setAddress(address);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE members SET address = ? WHERE member_id = ?")) {
+                            ps.setString(1, member.getAddress());
+                            ps.setString(2, member.getMemberID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((status != null && !status.isEmpty()) && !status.equals(member.getStatus())) {
+                        countChangesMade++;
+                        member.setStatus(MemberStatus.valueOf(status));
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE members SET member_status = ? WHERE member_id = ?")) {
+                            ps.setString(1, member.getStatus());
+                            ps.setString(2, member.getMemberID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    if (countChangesMade == rowsAffected) conn.commit();
+                    else conn.rollback();
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException e) {
+                DBUtility.SQLExceptionLoop(e);
+            }
+        }
     /**
      * removes member
      * @param id of member to remove
@@ -88,12 +165,9 @@ public class MemberServices {
     public void removeMember(String id) throws MemberNotFoundException {
         
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM members WHERE member_id = ?")) {
-                ps.setString(1, id);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) throw new MemberNotFoundException(id);
-                }
-            } try (PreparedStatement ps = conn.prepareStatement("DELETE FROM members WHERE member_id = ?")) {
+            if (!DBUtility.doesRowExists(TABLE, UIDCOL, id, conn))
+                throw new MemberNotFoundException(id);
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM members WHERE member_id = ?")) {
                 ps.setString(1, id);
                 int output = ps.executeUpdate();
                 if (output == 0) throw new RuntimeException("An Unexpected Error Occured");

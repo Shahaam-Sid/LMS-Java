@@ -1,15 +1,20 @@
 package com.library.models.book;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.LinkedList;
-import java.util.Queue;
 
+import com.library.db.DBConnection;
+import com.library.db.DBUtility;
 import com.library.enums.BookStatus;
 import com.library.enums.BookType;
 import com.library.interfaces.Borrowable;
 import com.library.interfaces.Reservable;
 import com.library.models.Member;
 import com.library.models.ValidationUtils;
+import com.library.services.MemberServices;
 
 /**
  * class for PhysicalBook objects
@@ -21,7 +26,6 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
     private String shelfLocation;
     private int totalCopies;
     private int availableCopies;
-    private final Queue<Member> reservationQueue;
 
     public PhysicalBook(String ISBN, String title, String author, String genre,
         int publishedYear, String shelfLocation, int totalCopies) {
@@ -29,7 +33,6 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
             setShelfLocation(shelfLocation);
             setTotalCopies(totalCopies);
             setAvailableCopies(totalCopies);
-            this.reservationQueue = new LinkedList<>();
         }
 
     // setter
@@ -46,7 +49,7 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
     }
     public final void setAvailableCopies(int availableCopies) throws IllegalArgumentException {
         if (availableCopies < 0 || availableCopies > totalCopies) 
-            throw new IllegalArgumentException("Available Copies must atleast 0 and lesseror equals to total copies");
+            throw new IllegalArgumentException("Available Copies must atleast 0 and lesser or equals to total copies");
     
         this.availableCopies = availableCopies;
     }
@@ -75,8 +78,8 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
         availableCopies++;
         setStatus(BookStatus.AVAILABLE);
 
-        if (!reservationQueue.isEmpty())
-            System.out.println("Notice: " + reservationQueue.peek().getName() + " has a reservation for this book");
+        if (!isReservationQueueEmpty())
+            System.out.println("Notice: " + peakReservationQueue().getName() + " has a reservation for this book");
         return true;
     }
     @Override
@@ -84,31 +87,135 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
     @Override
     public LocalDate calculateDueDate() {return LocalDate.now().plusDays(14);}
 
+    public boolean isReservationQueueEmpty() {return DBUtility.isEmpty("reservations");}
     // Reservable methods
     @Override
     public boolean reserve(Member member) {
-        if (reservationQueue.contains(member)) return false;
-        return reservationQueue.add(member);
+        int output = 0;
+        try (Connection conn = DBConnection.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM reservations WHERE member_id = ? AND isbn = ?")) {
+                ps.setString(1, member.getMemberID());
+                ps.setString(2, getISBN());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) return false;
+                }
+            }
+            String sql = """
+                    INSERT INTO book_reservations (isbn, member_id, notified, position)
+                    VALUES (?, ?, 0, (
+                        SELECT COALESCE(MAX(position), 0) + 1
+                        FROM book_reservations AS br
+                        WHERE br.isbn = ?
+                    ))
+                    """;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, getISBN());
+                ps.setString(2, member.getMemberID());
+                ps.setString(3, getISBN());
+
+                output = ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
+        }
+
+        return output == 1;
+    }
+    public Member peakReservationQueue() {
+        String sql = """
+                SELECT member_id, position
+                FROM book_reservations
+                WHERE isbn = ?
+                ORDER BY position ASC
+                LIMIT 1
+                """;
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, getISBN());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return MemberServices.mapMemberFromDB(rs);
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
+        }
+        throw new RuntimeException("No Record found"); // => Custom Exception
     }
     @Override
     public boolean cancelReservation(Member member) {
-        return reservationQueue.remove(member);
+        int rowsAffected = 0;
+        try (Connection conn = DBConnection.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM reservations WHERE member_id = ? AND isbn = ?")) {
+                ps.setString(1, member.getMemberID());
+                ps.setString(2, getISBN());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) return false;
+                }
+            }
+            int targetPosition = getQueuePosition(member);
+            if (targetPosition == -1) return false;
+            try {
+                conn.setAutoCommit(false);
+                String sql1 = """
+                        DELETE FROM book_reservations
+                        WHERE isbn = ? AND member_id = ?;
+                        """;
+                try (PreparedStatement ps = conn.prepareStatement(sql1)) {
+                    ps.setString(1, getISBN());
+                    ps.setString(2, member.getMemberID());
+                    rowsAffected += ps.executeUpdate();
+                }
+                String sql2 = """
+                        UPDATE book_reservations
+                        SET position = position - 1
+                        WHERE isbn = ? AND position > ?;
+                        """;
+                try (PreparedStatement ps = conn.prepareStatement(sql2)) {
+                    ps.setString(1, getISBN());
+                    ps.setInt(2, targetPosition);
+                    rowsAffected += ps.executeUpdate();
+                }               
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                if (rowsAffected == 2) conn.commit();
+                else conn.rollback();
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
+        }
+        return rowsAffected == 2;
     }
     @Override
     public int getQueuePosition(Member member) {
-        int pos = 0;
-        for (Member m : reservationQueue) {
-            pos++;
-            if (m.equals(member)) return pos;
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement("SELECT position FROM reservations WHERE member_id = ? AND isbn = ?")) {
+            ps.setString(1, member.getMemberID());
+            ps.setString(2, getISBN());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
         }
         return -1;
     }
     @Override
     public String getQueue() {
         StringBuilder sb = new StringBuilder("Reservation Queue for " + getTitle() + " | " + getISBN() + "\n\n");
-        for (Member m : reservationQueue) {
-            sb.append(m.toString());
-            sb.append("\n");
+
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement("SELECT member_id FROM transactions WHERE isbn = ?")) {
+            ps.setString(1, getISBN());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sb.append(MemberServices.mapMemberFromDB(rs).toString());
+                    sb.append("\n");
+                }
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
         }
         return sb.toString();
     }

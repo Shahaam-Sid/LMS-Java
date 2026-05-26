@@ -1,8 +1,9 @@
 package com.library.models;
 
-import com.library.models.book.AbstractBook;
 import java.time.LocalDate;
 import java.util.Objects;
+
+import com.library.models.book.AbstractBook;
 
 /**
  * A class for Transaction object
@@ -113,4 +114,4 @@ public class Transaction {
     public int hashCode() {
         return Objects.hash(transactionID);
     }
-}
+} // => give option to set constant matrics to set like fine per day at the start fo the program

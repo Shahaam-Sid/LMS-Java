@@ -1,10 +1,17 @@
 package com.library.models;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.library.db.DBConnection;
+import com.library.db.DBUtility;
 import com.library.enums.MemberStatus;
+import com.library.services.TransactionServices;
 /**
  * A class for Member Object
  * 
@@ -14,7 +21,6 @@ public class Member extends AbstractPupil {
 
     private String memberID;
     private MemberStatus status;
-    private final List<Transaction> borrowedTransaction;
 
     public static final int MAX_BORROW_LIMIT = 3;
 
@@ -22,7 +28,6 @@ public class Member extends AbstractPupil {
         super(name, phone, email, address, age);
         setMemberID(memberID);
         setStatus(MemberStatus.ACTIVE);
-        this.borrowedTransaction = new ArrayList<>();
     }
 
     // setter
@@ -41,28 +46,42 @@ public class Member extends AbstractPupil {
      * @return true if member is active and has less then 3 borrows
      */
     public boolean canBorrow() {
-        return status == MemberStatus.ACTIVE && borrowedTransaction.size() < MAX_BORROW_LIMIT;
+        return status == MemberStatus.ACTIVE && getBorrowedCount() < MAX_BORROW_LIMIT;
     }
     /**
      * add new transaction
      * @param t transaction
      */
-    public void addTransaction(Transaction t) {borrowedTransaction.add(t);}
-    /**
-     * removes transaction
-     * @param t transaction
-     */
-    public void removeTransaction(Transaction t) {borrowedTransaction.remove(t);}
-    /**
-     * get borrowed count list
-     * @return number of current borrows
-     */
-    public int getBorrowedCount() {return borrowedTransaction.size();}
+    public int getBorrowedCount() {
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM transactions WHERE return_date IS NULL AND member_id = ?")) {
+            ps.setString(1, memberID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
+        }
+        throw new RuntimeException("An Unexpected Error Occured");
+    }
     /**
      * get list of borrows
-     * @return list of books
+     * @return list of transactions
      */
-    public String getBorrowedList() {return borrowedTransaction.toString();} 
+    public String getBorrowedList() {
+        List<Transaction> borrowedList = new ArrayList<>();
+
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement("SELECT * FROM transactions WHERE return_date IS NULL AND member_id = ?")) {
+            ps.setString(1, memberID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) borrowedList.add(TransactionServices.mapTransactionFromDB(rs));
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
+        }
+        return borrowedList.toString();
+    } 
 
 
     @Override

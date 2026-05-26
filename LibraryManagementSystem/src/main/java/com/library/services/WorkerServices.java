@@ -10,6 +10,7 @@ import java.util.List;
 import com.library.db.DBConnection;
 import com.library.db.DBUtility;
 import com.library.exceptions.DuplicatePupilException;
+import com.library.exceptions.MemberNotFoundException;
 import com.library.exceptions.WorkerNotFoundException;
 import com.library.models.Admin;
 
@@ -19,12 +20,16 @@ import com.library.models.Admin;
  * @author Muhammad Shahaam Siddiqui
  */
 public class WorkerServices {
+
+    private static final String TABLE = "workers";
+    private static final String UIDCOL = "worker_id";
+
     /**
      * Checks if database is empty
      * @return true if empty, else not
      * @throws SQLException Error from Database
      */
-    public boolean isEmpty() {return DBUtility.isEmpty("workers");}
+    public boolean isEmpty() {return DBUtility.isEmpty(TABLE);}
 
     /**
      * register new member
@@ -36,12 +41,8 @@ public class WorkerServices {
     public void admitWorker(Admin worker) throws DuplicatePupilException {
         
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT worker_id FROM workers WHERE worker_id = ?")) {
-                ps.setString(1, worker.getWorkerID());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) throw new DuplicatePupilException(worker.getWorkerID());
-                }
-            }
+            if (DBUtility.doesRowExists(TABLE, UIDCOL, worker.getWorkerID(), conn))
+                throw new DuplicatePupilException(worker.getWorkerID());
             int workerTableAffected;
             int SnHTableAffected;
             conn.setAutoCommit(false);
@@ -101,6 +102,85 @@ public class WorkerServices {
         }
         throw new WorkerNotFoundException(id);
     }
+    public void updateWorker(String targetId, String name, String phone, String email, String address,
+        String password) throws MemberNotFoundException, IllegalArgumentException, Exception {
+            Admin worker = getWorker(targetId);
+
+            try (Connection conn = DBConnection.getConnection()) {
+                int rowsAffected = 0;
+                int countChangesMade = 0;
+                try {
+                    conn.setAutoCommit(false);
+
+                    if ((name != null && !name.isEmpty()) && !name.equals(worker.getName())) {
+                        countChangesMade++;
+                        worker.setName(name);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE workers SET worker_name = ? WHERE worker_id = ?")) {
+                            ps.setString(1, worker.getName());
+                            ps.setString(2, worker.getWorkerID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((phone != null && !phone.isEmpty()) && !phone.equals(worker.getPhone())) {
+                        countChangesMade++;
+                        worker.setPhone(phone);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE workers SET phone = ? WHERE worker_id = ?")) {
+                            ps.setString(1, worker.getPhone());
+                            ps.setString(2, worker.getWorkerID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((email != null && !email.isEmpty()) && !email.equals(worker.getEmail())) {
+                        countChangesMade++;
+                        worker.setEmail(email);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE workers SET email = ? WHERE worker_id = ?")) {
+                            ps.setString(1, worker.getEmail());
+                            ps.setString(2, worker.getWorkerID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if ((address != null && !address.isEmpty()) && !address.equals(worker.getAddress())) {
+                        countChangesMade++;
+                        worker.setAddress(address);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE workers SET address = ? WHERE worker_id = ?")) {
+                            ps.setString(1, worker.getAddress());
+                            ps.setString(2, worker.getWorkerID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                    if (password != null && !password.isEmpty()) {
+                        countChangesMade++;
+                        worker.setPassword(password);
+
+                        try (PreparedStatement ps = conn.prepareStatement("UPDATE salt_n_hash SET password_salt = ?, password_hash = ? WHERE worker_id = ?")) {
+                            ps.setString(1, worker.getSalt());
+                            ps.setString(2, worker.getHash());
+                            ps.setString(3, worker.getWorkerID());
+
+                            rowsAffected += ps.executeUpdate();
+                        }
+                    }
+                
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    if (countChangesMade == rowsAffected) conn.commit();
+                    else conn.rollback();
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException e) {
+                DBUtility.SQLExceptionLoop(e);
+            }
+        }
     /**
      * removes worker
      * @param id of worker to remove
@@ -108,12 +188,9 @@ public class WorkerServices {
      */
     public void removeWorker(String id) throws WorkerNotFoundException {
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM workers WHERE worker_id = ?")) {
-                ps.setString(1, id);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) throw new WorkerNotFoundException(id);
-                }
-            } try (PreparedStatement ps = conn.prepareStatement("DELETE FROM workers WHERE worker_id = ?")) {
+            if (!DBUtility.doesRowExists(TABLE, UIDCOL, id, conn))
+                throw new WorkerNotFoundException(id);
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM workers WHERE worker_id = ?")) {
                 ps.setString(1, id);
                 int output = ps.executeUpdate();
                 if (output == 0) throw new RuntimeException("An Unexpected Error Occured");

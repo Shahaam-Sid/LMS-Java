@@ -25,11 +25,14 @@ import com.library.models.book.PhysicalBook;
  */
 public class BookServices {
 
+    private static final String TABLE = "books";
+    private static final String UIDCOL = "isbn";
+
     /**
      * Checks if database is empty
      * @return true if empty, else not
      */
-    public boolean isEmpty() {return DBUtility.isEmpty("books");}
+    public boolean isEmpty() {return DBUtility.isEmpty(TABLE);}
     /**
      * adds new book to Database
      * @param book to add
@@ -39,14 +42,9 @@ public class BookServices {
     public void addNewBook(AbstractBook book) throws DuplicateISBNException {
     
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT isbn FROM books WHERE isbn = ?")) {
-                ps.setString(1, book.getISBN());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        throw new DuplicateISBNException(book.getISBN());
-                    }
-                }
-            }
+            if (DBUtility.doesRowExists(TABLE, UIDCOL, book.getISBN(), conn))
+                throw new DuplicateISBNException(book.getISBN());
+
             String ISBN = book.getISBN();
             String title = book.getTitle();
             String author = book.getAuthor();
@@ -144,6 +142,75 @@ public class BookServices {
         }
         throw new BookNotFoundException(isbn);
     }
+    public void updateBook(String targetISBN, String status, 
+        String shelfLocation, String totalCopies, String availableCopies) 
+        throws BookNotFoundException, IllegalArgumentException {
+
+        AbstractBook book = getBook(targetISBN);
+
+        try (Connection conn = DBConnection.getConnection()) {
+            int rowsAffected = 0;
+            int countChangesMade = 0;
+            try {
+                conn.setAutoCommit(false);
+                if ((status != null && !status.isEmpty()) && !status.equals(book.getStatus())) {
+                    countChangesMade++;
+                    book.setStatus(BookStatus.valueOf(status));
+
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE books SET book_status = ? WHERE isbn = ?")) {
+                        ps.setString(1, book.getStatus());
+                        ps.setString(2, book.getISBN());
+                        
+                        rowsAffected += ps.executeUpdate();
+                    }
+                }
+                PhysicalBook pBook = (PhysicalBook) book;
+                if ((shelfLocation != null && !shelfLocation.isEmpty()) && !shelfLocation.equals(pBook.getShelfLocation())) {
+                    countChangesMade++;
+                    pBook.setShelfLocation(shelfLocation);
+
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE books SET shelf_location = ? WHERE isbn = ?")) {
+                        ps.setString(1, pBook.getShelfLocation());
+                        ps.setString(1, pBook.getISBN());
+
+                        rowsAffected += ps.executeUpdate();
+                    }
+                }
+                if ((totalCopies != null && !totalCopies.isEmpty()) && (pBook.getTotalCopies() != Integer.parseInt(totalCopies))) {
+                    countChangesMade++;
+                    pBook.setTotalCopies(Integer.parseInt(totalCopies));
+
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE books SET total_copies = ? WHERE isbn = ?")) {
+                        ps.setInt(1, pBook.getTotalCopies());
+                        ps.setString(2, pBook.getISBN());
+
+                        rowsAffected += ps.executeUpdate();
+                    }
+                }
+                if (availableCopies != null && !availableCopies.isEmpty() && (pBook.getAvailableCopies() != Integer.parseInt(availableCopies))) {
+                    countChangesMade++;
+                    pBook.setAvailableCopies(Integer.parseInt(availableCopies));
+
+                    try (PreparedStatement ps = conn.prepareStatement("UPDATE books SET available_copies = ? WHERE isbn = ?")) {
+                        ps.setInt(1, pBook.getAvailableCopies());
+                        ps.setString(2, pBook.getISBN());
+
+                        rowsAffected += ps.executeUpdate();
+                    }
+                }
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                if (rowsAffected == countChangesMade) conn.commit();
+                else conn.rollback();
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            DBUtility.SQLExceptionLoop(e);
+        }
+    } // => Handle the user input on this method AND if totalCopies updates then availableCopies must also be updated
     /**
      * removes book from List
      * @param isbn of book
@@ -153,12 +220,9 @@ public class BookServices {
      */
     public void removeBook(String isbn) throws BookNotFoundException, RuntimeException {
         try (Connection conn = DBConnection.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM books WHERE isbn = ?")) {
-                ps.setString(1, isbn);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) throw new BookNotFoundException(isbn);
-                }
-            } try (PreparedStatement ps = conn.prepareStatement("DELETE FROM books WHERE isbn = ?")) {
+            if (!DBUtility.doesRowExists(TABLE, UIDCOL, isbn, conn))
+                throw new BookNotFoundException(isbn);
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM books WHERE isbn = ?")) {
                 ps.setString(1, isbn);
                 int output = ps.executeUpdate();
                 if (output == 0) throw new RuntimeException("Unexpected Error Occurred");   
@@ -267,4 +331,3 @@ public class BookServices {
         }
     }
 } // => Prevent Book rom deletion when is borrowed
-// !! Resolve DB Credentials issue using .env

@@ -1,6 +1,8 @@
 package com.library;
 
-import com.library.services.WorkerServices;
+import com.library.services.BookServices;
+import com.library.services.MemberServices;
+import com.library.services.TransactionServices;
 
 // import com.library.services.BookServices;
 // import com.library.services.MemberServices;
@@ -23,10 +25,14 @@ import com.library.services.WorkerServices;
 
 public class Main {
     public static void main(String[] args) {
-        WorkerServices ws = new WorkerServices();
         try {
-        
-            System.out.println(ws.searchWorker("ali.") + "");
+            BookServices bs = new BookServices();
+            MemberServices ms = new MemberServices();
+            TransactionServices ts = new TransactionServices(bs, ms);
+            com.library.models.Member member = ms.getMember("CLB741852");
+
+            System.out.println(member.getBorrowedList());
+            
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
