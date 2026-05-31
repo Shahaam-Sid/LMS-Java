@@ -10,6 +10,9 @@ import java.util.List;
 import com.library.db.DBConnection;
 import com.library.db.DBUtility;
 import com.library.enums.MemberStatus;
+import com.library.exceptions.CannotDeleteEntityException;
+import com.library.exceptions.ChangesNotSavedException;
+import com.library.exceptions.DatabaseException;
 import com.library.exceptions.DuplicatePupilException;
 import com.library.exceptions.MemberNotFoundException;
 import com.library.models.Member;
@@ -33,10 +36,11 @@ public class MemberServices {
      * registers new member
      * @param member to register
      * @throws DuplicatePupilException if member already exists
-     * @throws RuntimeException if query not executes correctly
-     * @throws SQLException Error from Database
+     * @throws ChangesNotSavedException if query not executes correctly
+     * @throws DatabaseException Error from Database
      */
-    public void registerMember(Member member) throws DuplicatePupilException {
+    public void registerMember(Member member) throws DuplicatePupilException,
+    ChangesNotSavedException, DatabaseException {
         
         try (Connection conn = DBConnection.getConnection()) {
             if (DBUtility.doesRowExists(TABLE, UIDCOL, member.getMemberID(), conn))
@@ -51,10 +55,10 @@ public class MemberServices {
                 ps.setString(7, member.getStatus());
 
                 int output = ps.executeUpdate();
-                if (output == 0) throw new RuntimeException("An Unexpected Error Occured");
+                if (output == 0) throw new ChangesNotSavedException();
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
     /**
@@ -62,9 +66,9 @@ public class MemberServices {
      * @param id of member to get
      * @return member
      * @throws MemberNotFoundException if member not found
-     * @throws SQLException Error from Database
+     * @throws DatabaseException from Database
      */
-    public Member getMember(String id) throws MemberNotFoundException {
+    public Member getMember(String id) throws MemberNotFoundException, DatabaseException {
     
         try (Connection conn = DBConnection.getConnection();
         PreparedStatement ps = conn.prepareStatement("SELECT * FROM members WHERE member_id = ?")) {
@@ -73,12 +77,24 @@ public class MemberServices {
                 if (rs.next()) return mapMemberFromDB(rs);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         throw new MemberNotFoundException(id);
     }
+    /**
+     * Updates member
+     * @param targetId to update
+     * @param name new name, if empty unchanged
+     * @param phone new phone, if empty unchanged
+     * @param email new email, if empty unchanged
+     * @param address new address, if empty unchanged
+     * @param status new status, if empty unchanged
+     * @throws MemberNotFoundException if Member doesmot exist
+     * @throws IllegalArgumentException Invalid Argument
+     * @throws DatabaseException from Database
+     */
     public void updateMember(String targetId, String name, String phone, String email, String address,
-        String status) throws MemberNotFoundException, IllegalArgumentException {
+        String status) throws MemberNotFoundException, IllegalArgumentException, DatabaseException {
             Member member = getMember(targetId);
 
             try (Connection conn = DBConnection.getConnection()) {
@@ -152,28 +168,36 @@ public class MemberServices {
                     conn.setAutoCommit(true);
                 }
             } catch (SQLException e) {
-                DBUtility.SQLExceptionLoop(e);
+                throw new DatabaseException(e.getErrorCode(), e);
             }
         }
     /**
      * removes member
      * @param id of member to remove
      * @throws MemberNotFoundException if member not found
-     * @throws RuntimeException if query not executes correctly
-     * @throws SQLException Error from Database
+     * @throws ChangesNotSavedException if query not executes correctly
+     * @throws CannotDeleteEntityException if an active transactions exists
+     * @throws DatabaseException from Database
      */
-    public void removeMember(String id) throws MemberNotFoundException {
+    public void removeMember(String id) throws MemberNotFoundException, CannotDeleteEntityException,
+    ChangesNotSavedException, DatabaseException {
         
         try (Connection conn = DBConnection.getConnection()) {
             if (!DBUtility.doesRowExists(TABLE, UIDCOL, id, conn))
                 throw new MemberNotFoundException(id);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM transactions WHERE member_id = ? AND return_date IS NULL")) {
+                ps.setString(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) throw new CannotDeleteEntityException("member", id);
+                }
+            }
             try (PreparedStatement ps = conn.prepareStatement("DELETE FROM members WHERE member_id = ?")) {
                 ps.setString(1, id);
                 int output = ps.executeUpdate();
-                if (output == 0) throw new RuntimeException("An Unexpected Error Occured");
+                if (output == 0) throw new ChangesNotSavedException();
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
     
@@ -181,9 +205,9 @@ public class MemberServices {
      * searches for member
      * @param query string for member to search
      * @return list of results matched
-     * @throws SQLException Error from Database
+     * @throws DatabaseException from Database
      */
-    public List<Member> searchMembers(String query) {
+    public List<Member> searchMembers(String query) throws DatabaseException {
         List<Member> members = new ArrayList<>();
         String sql = """
                 SELECT * FROM members
@@ -204,35 +228,44 @@ public class MemberServices {
             }
             
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return members;
     }
     /**
      * returns list of all members
      * @return list of members
+     * @throws DatabaseException from Database
      */
-    public List<Member> getAllMembers() {
+    public List<Member> getAllMembers() throws DatabaseException {
         List<Member> members = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection();
         PreparedStatement ps = conn.prepareStatement("SELECT * FROM members");
         ResultSet rs = ps.executeQuery()) {
             while (rs.next()) members.add(mapMemberFromDB(rs));
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return members;
     }
 
-    
-    public static Member mapMemberFromDB(ResultSet rs) throws IllegalArgumentException, SQLException{
+    /**
+     * Maps member from Database
+     * @param rs ResultSet
+     * @return Member
+     * @throws IllegalArgumentException if rs is not valid / is empty
+     * @throws DatabaseException from Database
+     */    
+    public static Member mapMemberFromDB(ResultSet rs) throws IllegalArgumentException, DatabaseException{
         if (rs == null) throw new IllegalArgumentException("Invalid Response from Database");
 
-        Member m =  new Member(rs.getString("member_id"), rs.getString("member_name"), 
+        try {
+            Member m =  new Member(rs.getString("member_id"), rs.getString("member_name"), 
                 rs.getString("phone"), rs.getString("email"), rs.getString("address"), rs.getInt("age"));
-        m.setStatus(MemberStatus.valueOf(rs.getString("member_status")));
-        
-        return m;
+            m.setStatus(MemberStatus.valueOf(rs.getString("member_status")));
+            return m;
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getErrorCode(), e);
+        }
     }
-} 
-// => Prevent member from deletion if has active transaction
+}

@@ -2,9 +2,9 @@
 
 ## Overview
 
-The LMS is a console-based Java application built around a layered architecture with a strong OOP foundation. The system is intentionally designed without a database or GUI in this phase — all data lives in memory — so the focus remains on clean class design, interface contracts, and separation of concerns.
+The LMS is a console-based Java application built around a layered architecture with a strong OOP foundation. The system has progressed from in-memory storage (Phase 2) to a MySQL-backed persistence layer (Phase 3), with all data now read from and written to a relational database via direct JDBC.
 
-The application is divided into four layers:
+The application is divided into five layers:
 
 ```
 ┌─────────────────────────────┐
@@ -18,6 +18,9 @@ The application is divided into four layers:
 ├─────────────────────────────┤
 │    Utility / Support        │  Enums, Exceptions,
 │                             │  ValidationUtils, PasswordUtils
+├─────────────────────────────┤
+│     Persistence Layer       │  MySQL 8 via JDBC (Connector/J 8.3.0)
+│                             │  SQL embedded directly in Service classes
 └─────────────────────────────┘
 ```
 
@@ -91,7 +94,10 @@ Models know about themselves — a `Member` knows its own borrowed transactions.
 **Why custom exceptions instead of generic ones?**
 `throw new Exception("Book not found")` gives the caller no structured information. `throw new BookNotFoundException(isbn)` lets the UI layer catch specific scenarios and show the right message, without relying on parsing strings. Each custom exception maps to exactly one user-facing error scenario.
 
-**Why `PBKDF2` for password hashing?**
+**Why direct JDBC instead of a Repository pattern or ORM?**
+At this phase the goal is understanding how Java talks to a database at the lowest level — what a `Connection` is, how `PreparedStatement` works, how a `ResultSet` maps to an object. An ORM like Hibernate would hide all of that. A Repository pattern would be the right next step, but adds a layer of abstraction before the basics are solid. Direct JDBC in Services is the deliberate choice here, with a planned refactor noted in the future enhancements section.
+
+
 Admin passwords are hashed with a salt using PBKDF2 (via `PasswordUtils`) rather than stored in plaintext. This is industry-standard for credential storage even in small systems, and establishes the right habit before a database is added.
 
 ---
@@ -104,30 +110,86 @@ LibraryMenu.borrowBook()
     ▼
 TransactionServices.borrowBook(isbn, memberId)
     │
-    ├── MemberServices.getMember(memberId)     → throws MemberNotFoundException
-    ├── BookServices.getBook(isbn)             → throws BookNotFoundException
-    ├── book.isAvailable()                     → throws BookNotAvailableException
+    ├── MemberServices.getMember(memberId)      → SELECT from members → throws MemberNotFoundException
+    ├── BookServices.getBook(isbn)              → SELECT from books   → throws BookNotFoundException
+    ├── book.isAvailable()                      → throws BookNotAvailableException
     ├── member.getBorrowedTransactions().size() → throws MemberLimitExceededException
     │
     ├── new Transaction(member, book)
-    ├── book.borrow(member)                    → updates availableCopies, status
-    └── member.addTransaction(transaction)
+    ├── INSERT transaction into transactions table
+    ├── UPDATE books SET available_copies, status
+    └── UPDATE members borrowed list (or rely on transactions join)
 ```
+
+---
+
+## Persistence Layer — MySQL via Direct JDBC
+
+### Technology
+
+- **Database**: MySQL 8
+- **Driver**: MySQL Connector/J `8.3.0` (`com.mysql.cj.jdbc.Driver`)
+- **Approach**: Direct JDBC — SQL statements are written and executed inside Service classes, with no ORM or Repository abstraction layer
+
+### How it works
+
+Each Service class is responsible for its own database operations. When a service method needs to read or write data, it opens a connection, prepares a statement, executes it, maps the `ResultSet` back to model objects, and closes the connection.
+
+A typical pattern inside a service method:
+
+```java
+// Inside BookServices.java
+public AbstractBook getBook(String isbn) throws BookNotFoundException {
+    String sql = "SELECT * FROM books WHERE isbn = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setString(1, isbn);
+        ResultSet rs = stmt.executeQuery();
+
+        if (!rs.next()) throw new BookNotFoundException(isbn);
+        return mapResultSetToBook(rs);   // builds the correct subclass
+
+    } catch (SQLException e) {
+        throw new RuntimeException("Database error: " + e.getMessage());
+    }
+}
+```
+
+### Connection management
+
+Database connections are managed through a central `DatabaseConnection` utility class (in `com.library.models` or a dedicated `db` package) that holds the connection URL, credentials, and hands out connections on demand. `PreparedStatement` is used everywhere — never string-concatenated SQL — to prevent SQL injection.
+
+### How Services map SQL rows to Models
+
+Since the database stores a `book_type` column (`PHYSICAL`, `EBOOK`, `AUDIOBOOK`), each service has a private `mapResultSetToBook()` helper that reads the type and instantiates the correct subclass (`PhysicalBook`, `EBook`, or `AudioBook`). The model classes themselves are unchanged — they remain plain Java objects with no JDBC code inside them.
+
+### Trade-off of this approach
+
+Embedding SQL directly in Services is straightforward and keeps the codebase flat. The trade-off is that Services now have two responsibilities: business logic *and* data access. This is acceptable for the current phase. In a future phase, extracting SQL into dedicated Repository classes (one per entity) would cleanly separate these concerns and make the Services easier to unit test.
+
+### Database schema
+
+See [`docs/database.md`](./database.md) for full table definitions, relationships, and setup instructions.
+See [`sql/schema.sql`](../sql/schema.sql) for the complete SQL to recreate the database from scratch.
 
 ---
 
 ## Diagrams
 
-[**Models & Services**](./diagrams/Library-Management-System.jpg)
-[**Enumerations**](./diagrams/Enumerations.jpg)
-[**Exceptions & Validations**](./diagrams/Exceptions%20and%20Validations.jpg)
+| Diagram | File |
+|---|---|
+| Library Management System | [diagrams/Library-Management-System.jpg](diagrams/Library-Management-System.jpg) |
+| Enumerations | [diagrams/Enumerations.jpg](diagrams/Enumerations.jpg) |
+| Exceptions & Utilities | [diagrams/exceptions-and-validations.jpg](diagrams/Exceptions%20and%20Validations.jpg) |
+| Entity Relationship Diagram | [diagrams/erd.png](diagrams/erd.png) |
 
 ---
 
 ## What's Not Here Yet
 
-This document reflects **Phase 2** of the project. The following will be added in later phases:
+This document reflects **Phase 3** of the project. The following will be added in later phases:
 
-- **File I/O / Database (Phase 3)**: A persistence layer will sit below Services. Models will remain unchanged — Services will delegate save/load to a Repository layer.
+
 - **Spring Boot / REST API (Phase 4)**: Services are already decoupled from the UI, so exposing them as REST endpoints will not require restructuring the business logic.
-- **JavaFX GUI (Phase 5)**: Same reason — `LibraryMenu` is the only UI-aware class, so replacing it with a JavaFX controller is a clean swap.
+- **JavaFX GUI (Phase 5)**: `LibraryMenu` is the only UI-aware class, so replacing it with a JavaFX controller is a clean swap.

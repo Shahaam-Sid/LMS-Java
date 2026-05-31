@@ -5,12 +5,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 
 import com.library.db.DBConnection;
-import com.library.db.DBUtility;
 import com.library.enums.MemberStatus;
+import com.library.exceptions.DatabaseException;
+import com.library.exceptions.NoOutputReceivedException;
 import com.library.services.TransactionServices;
 /**
  * A class for Member Object
@@ -23,6 +25,10 @@ public class Member extends AbstractPupil {
     private MemberStatus status;
 
     public static final int MAX_BORROW_LIMIT = 3;
+
+    public Member(String name, String phone, String email, String address, int age) throws SQLException {
+        this(generateMemberIDString(), name, phone, email, address, age);
+    }
 
     public Member(String memberID, String name, String phone, String email, String address, int age) {
         super(name, phone, email, address, age);
@@ -52,7 +58,7 @@ public class Member extends AbstractPupil {
      * add new transaction
      * @param t transaction
      */
-    public int getBorrowedCount() {
+    public int getBorrowedCount() throws NoOutputReceivedException, DatabaseException {
         try (Connection conn = DBConnection.getConnection();
         PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM transactions WHERE return_date IS NULL AND member_id = ?")) {
             ps.setString(1, memberID);
@@ -60,15 +66,15 @@ public class Member extends AbstractPupil {
                 if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
-        throw new RuntimeException("An Unexpected Error Occured");
+        throw new NoOutputReceivedException();
     }
     /**
      * get list of borrows
      * @return list of transactions
      */
-    public String getBorrowedList() {
+    public String getBorrowedList() throws DatabaseException {
         List<Transaction> borrowedList = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
@@ -78,7 +84,7 @@ public class Member extends AbstractPupil {
                 while (rs.next()) borrowedList.add(TransactionServices.mapTransactionFromDB(rs));
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return borrowedList.toString();
     } 
@@ -102,5 +108,21 @@ public class Member extends AbstractPupil {
     public int hashCode() {
         return Objects.hash(memberID);
     }
+
+    /**
+     * generates memberID String
+     * @return String memberID
+     * @throws DatabaseException from Database
+     */
+    public static String generateMemberIDString() throws DatabaseException {
+        StringBuilder sb = new StringBuilder("M");
+        int year = Calendar.getInstance().get(Calendar.YEAR);
+        String yearString = String.valueOf(year);
+        sb.append(yearString.substring(2));
+
+        int c = countRowsPerCurrYear("members");
+
+        sb.append(String.format("%06d", c));
+        return sb.toString();
+    }
 }
-// => Add auto id generator

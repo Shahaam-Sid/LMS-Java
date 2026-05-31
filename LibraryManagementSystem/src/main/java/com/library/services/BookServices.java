@@ -12,6 +12,9 @@ import com.library.db.DBUtility;
 import com.library.enums.BookStatus;
 import com.library.enums.BookType;
 import com.library.exceptions.BookNotFoundException;
+import com.library.exceptions.CannotDeleteEntityException;
+import com.library.exceptions.ChangesNotSavedException;
+import com.library.exceptions.DatabaseException;
 import com.library.exceptions.DuplicateISBNException;
 import com.library.models.book.AbstractBook;
 import com.library.models.book.AudioBook;
@@ -37,9 +40,9 @@ public class BookServices {
      * adds new book to Database
      * @param book to add
      * @throws DuplicateISBNException if book already exists
-     * @throws SQLException Error from Database
+     * @throws DatabaseException from Database
      */
-    public void addNewBook(AbstractBook book) throws DuplicateISBNException {
+    public void addNewBook(AbstractBook book) throws DuplicateISBNException, DatabaseException {
     
         try (Connection conn = DBConnection.getConnection()) {
             if (DBUtility.doesRowExists(TABLE, UIDCOL, book.getISBN(), conn))
@@ -119,17 +122,17 @@ public class BookServices {
                 default -> System.out.println("Invalid Book Type");
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
     /**
      * gets book object from List
      * @param isbn of book
      * @return book
-     * @throws BookNotFoundException if book not in list
-     * @throws SQLException Error from Database
+     * @throws BookNotFoundException if book not in list 
+     * @throws DatabaseException Error from Database
      */
-    public AbstractBook getBook(String isbn) throws BookNotFoundException {
+    public AbstractBook getBook(String isbn) throws BookNotFoundException, DatabaseException {
         
         try (Connection conn = DBConnection.getConnection();
         PreparedStatement ps = conn.prepareStatement("SELECT * FROM books WHERE isbn = ?")) {
@@ -138,13 +141,23 @@ public class BookServices {
                 if (rs.next()) return mapBookFromDB(rs);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         throw new BookNotFoundException(isbn);
     }
+    /**
+     * Updates book
+     * @param targetISBN of book to update
+     * @param status new status, "" if empty remains unchanged
+     * @param shelfLocation new shelfLocation, "" if empty remains unchanged
+     * @param totalCopies new totalCopies, "" if empty remains unchanged
+     * @param availableCopies new availableCopies, "" if empty remains unchanged
+     * @throws BookNotFoundException if target book not found
+     * @throws DatabaseException from Database
+     */
     public void updateBook(String targetISBN, String status, 
         String shelfLocation, String totalCopies, String availableCopies) 
-        throws BookNotFoundException, IllegalArgumentException {
+        throws BookNotFoundException, DatabaseException {
 
         AbstractBook book = getBook(targetISBN);
 
@@ -208,36 +221,44 @@ public class BookServices {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
-    } // => Handle the user input on this method AND if totalCopies updates then availableCopies must also be updated
+    }
     /**
      * removes book from List
      * @param isbn of book
      * @throws BookNotFoundException if book not in list
-     * @throws RuntimeException if query not executes correctly
-     * @throws SQLException Error from Database
+     * @throws CannotDeleteEntityException if an active trnasaction is found Book cannot be removed
+     * @throws ChangesNotSavedException if query not executes correctly
+     * @throws DatabaseException Error from Database
      */
-    public void removeBook(String isbn) throws BookNotFoundException, RuntimeException {
+    public void removeBook(String isbn) throws BookNotFoundException, CannotDeleteEntityException,
+    ChangesNotSavedException, DatabaseException {
         try (Connection conn = DBConnection.getConnection()) {
             if (!DBUtility.doesRowExists(TABLE, UIDCOL, isbn, conn))
                 throw new BookNotFoundException(isbn);
+            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM transactions WHERE isbn = ? AND return_date IS NULL")) {
+                ps.setString(1, isbn);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) throw new CannotDeleteEntityException("book", isbn);
+                }
+            }
             try (PreparedStatement ps = conn.prepareStatement("DELETE FROM books WHERE isbn = ?")) {
                 ps.setString(1, isbn);
                 int output = ps.executeUpdate();
-                if (output == 0) throw new RuntimeException("Unexpected Error Occurred");   
+                if (output == 0) throw new ChangesNotSavedException();   
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
     /**
      * searches for book
      * @param query string for book to search
      * @return list of results matched
-     * @throws SQLException Error from Database
+     * @throws DatabaseException from Database
      */
-    public List<AbstractBook> searchBooks(String query) {
+    public List<AbstractBook> searchBooks(String query) throws DatabaseException {
         List<AbstractBook> results = new ArrayList<>();
         String sql = """
                 SELECT * FROM books
@@ -263,71 +284,83 @@ public class BookServices {
                 while (rs.next()) results.add(mapBookFromDB(rs));
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return results;
     }
     /**
      * returns list of all books
+     * @throws DatabaseException from Database
      * @return list of books
      */
-    public List<AbstractBook> getAllBooks() {
+    public List<AbstractBook> getAllBooks() throws DatabaseException {
         List<AbstractBook> results = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection();
         PreparedStatement ps = conn.prepareStatement("SELECT * FROM books");
         ResultSet rs = ps.executeQuery()) {
             while (rs.next()) results.add(mapBookFromDB(rs));
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return results;
     }
 
-
+    /**
+     * maps Book from Database
+     * @param rs ResultSet
+     * @return AbstractBook
+     * @throws IllegalArgumentException if rs is not valid/ is empty
+     * @throws ClassCastException if cannot map Member from Database
+     * @throws DatabaseException from Database
+     */
     public static AbstractBook mapBookFromDB(ResultSet rs) 
-                            throws IllegalArgumentException, SQLException {
+                            throws IllegalArgumentException, ClassCastException, DatabaseException {
 
         if (rs == null) throw new IllegalArgumentException("Invalid Response from Database");
+        
+        try {
+            String isbn = rs.getString("isbn");
+            String title = rs.getString("title");
+            String author = rs.getString("author");
+            String genre = rs.getString("genre");
+            int publishedYear = rs.getInt("published_year");
+            BookStatus status = BookStatus.valueOf(rs.getString("book_status"));
+            BookType type = BookType.valueOf(rs.getString("book_type"));
 
-        String isbn = rs.getString("isbn");
-        String title = rs.getString("title");
-        String author = rs.getString("author");
-        String genre = rs.getString("genre");
-        int publishedYear = rs.getInt("published_year");
-        BookStatus status = BookStatus.valueOf(rs.getString("book_status"));
-        BookType type = BookType.valueOf(rs.getString("book_type"));
+            switch (type) {
+                case PHYSICAL -> {
+                    String shelfLocation = rs.getString("shelf_location");
+                    int totalCopies = rs.getInt("total_copies");
+                    int availableCopies = rs.getInt("available_copies");
 
-        switch (type) {
-            case PHYSICAL -> {
-                String shelfLocation = rs.getString("shelf_location");
-                int totalCopies = rs.getInt("total_copies");
-                int availableCopies = rs.getInt("available_copies");
+                    PhysicalBook book = new PhysicalBook(isbn, title, author, genre, publishedYear,
+                        shelfLocation, totalCopies);
+                    book.setStatus(status);
+                    book.setAvailableCopies(availableCopies);
+                    return book;
+                } case EBOOK -> {
+                    String downloadURL = rs.getString("download_url");
+                    String format = rs.getString("file_format");
+                    double fileSizeMB = rs.getDouble("file_size_mb");
 
-                PhysicalBook book = new PhysicalBook(isbn, title, author, genre, publishedYear,
-                     shelfLocation, totalCopies);
-                book.setStatus(status);
-                book.setAvailableCopies(availableCopies);
-                return book;
-            } case EBOOK -> {
-                String downloadURL = rs.getString("download_url");
-                String format = rs.getString("file_format");
-                double fileSizeMB = rs.getDouble("file_size_mb");
-
-                EBook book = new EBook(isbn, title, author, genre, publishedYear,
-                     downloadURL, format, fileSizeMB);
-                book.setStatus(status);
-                return book;
-            } case AUDIOBOOK -> {
-                String downloadURL = rs.getString("download_url");
-                String format = rs.getString("file_format");
-                double fileSizeMB = rs.getDouble("file_size_mb");
-                String narrator = rs.getString("narrator");
-                
-                AudioBook book = new AudioBook(isbn, title, author, genre, publishedYear,
-                     downloadURL, format, fileSizeMB, narrator);
-                book.setStatus(status);
-                return book;
-            } default -> throw new ClassCastException("Invalid data cannot map to book");
+                    EBook book = new EBook(isbn, title, author, genre, publishedYear,
+                        downloadURL, format, fileSizeMB);
+                    book.setStatus(status);
+                    return book;
+                } case AUDIOBOOK -> {
+                    String downloadURL = rs.getString("download_url");
+                    String format = rs.getString("file_format");
+                    double fileSizeMB = rs.getDouble("file_size_mb");
+                    String narrator = rs.getString("narrator");
+                    
+                    AudioBook book = new AudioBook(isbn, title, author, genre, publishedYear,
+                        downloadURL, format, fileSizeMB, narrator);
+                    book.setStatus(status);
+                    return book;
+                } default -> throw new ClassCastException("Invalid data cannot map to book");
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
-} // => Prevent Book rom deletion when is borrowed
+}

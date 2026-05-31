@@ -11,11 +11,14 @@ import java.util.List;
 import java.util.UUID;
 
 import com.library.db.DBConnection;
-import com.library.db.DBUtility;
+import com.library.exceptions.BookAlreadyBorrowedException;
 import com.library.exceptions.BookNotAvailableException;
 import com.library.exceptions.BookNotFoundException;
+import com.library.exceptions.ChangesNotSavedException;
+import com.library.exceptions.DatabaseException;
 import com.library.exceptions.MemberLimitExceededException;
 import com.library.exceptions.MemberNotFoundException;
+import com.library.exceptions.NoActiveBorrowRecordFoundException;
 import com.library.interfaces.Borrowable;
 import com.library.models.Member;
 import com.library.models.Transaction;
@@ -47,11 +50,13 @@ public class TransactionServices {
      * @throws MemberLimitExceededException if borrow limit of member exceeds limit
      * @throws UnsupportedOperationException if book not borrowable
      * @throws BookNotAvailableException if book not currently available
-     * @throws RUntimeException Unexpected Error from Database
+     * @throws BookAlreadyBorrowedException if book is already Borrowed by the Member
+     * @throws ChangesNotSavedException Unexpected Error from Database
+     * @throws DatabaseException from Database
      */
     public Transaction borrowBook(String isbn, String memberID) throws BookNotFoundException,
     MemberNotFoundException, MemberLimitExceededException, UnsupportedOperationException,
-    BookNotAvailableException, RuntimeException {
+    BookNotAvailableException,BookAlreadyBorrowedException,DatabaseException, ChangesNotSavedException {
         AbstractBook book = bookService.getBook(isbn);
         Member member = memberService.getMember(memberID);
 
@@ -77,7 +82,7 @@ public class TransactionServices {
                 ps.setString(1, member.getMemberID());
                 ps.setString(2, book.getISBN());
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) throw new RuntimeException("Book ALready Borrowed"); // => custome xcpetions to be made
+                    if (rs.next()) throw new BookAlreadyBorrowedException(book.getTitle(), member.getMemberID());
                 }
             }
             try {
@@ -114,11 +119,11 @@ public class TransactionServices {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
 
         if (rowsAffected == 2) return t;
-        else throw new RuntimeException("Unexpected Error Occured");
+        else throw new ChangesNotSavedException();
     }
     /**
      * closes transaction
@@ -127,10 +132,13 @@ public class TransactionServices {
      * @return transaction
      * @throws MemberNotFoundException if member id not found
      * @throws BookNotFoundException if isbn not found
-     * @throws RuntimeException no active borrow
+     * @throws NoActiveBorrowRecordFound no active borrow
+     * @throws ChangesNotSavedException an error occured
+     * @throws DatabaseException from Database
      */
     public Transaction returnBook(String isbn, String memberId) throws MemberNotFoundException,
-    BookNotFoundException, RuntimeException {
+    BookNotFoundException, DatabaseException, NoActiveBorrowRecordFoundException,
+    ChangesNotSavedException, DatabaseException {
         Member member = memberService.getMember(memberId);
         AbstractBook book = bookService.getBook(isbn);
         Transaction active = null;
@@ -150,9 +158,9 @@ public class TransactionServices {
             }
             
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
-        if (active == null) throw new RuntimeException("No Active Borrow Found");
+        if (active == null) throw new NoActiveBorrowRecordFoundException(book.getTitle(), member.getMemberID()); // fix this
 
         ((Borrowable) book).returnItem(member);
 
@@ -191,16 +199,17 @@ public class TransactionServices {
                 conn.setAutoCommit(true);   
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         if (rowsAffected == 2) return active;
-        else throw new RuntimeException("An Unexpected Error Occured");
+        else throw new ChangesNotSavedException();
     }
     /**
      * returns a list of overdues
      * @return list of overdue transactions
+     * @throws DatabaseException from Database
      */
-    public List<Transaction> getOverdueTransactions() {
+    public List<Transaction> getOverdueTransactions() throws DatabaseException {
         List<Transaction> overdue = new ArrayList<>();
 
         String sql = """
@@ -213,15 +222,16 @@ public class TransactionServices {
         ResultSet rs = ps.executeQuery()) {
             while (rs.next()) overdue.add(mapTransactionFromDB(rs));
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return overdue;
     }
     /**
      * returns list of all transactions
      * @return list of transactions
+     *  @throws DatabaseException from Database
      */
-    public List<Transaction> getAllTransactions() {
+    public List<Transaction> getAllTransactions() throws DatabaseException {
         List<Transaction> result = new ArrayList<>();
 
         try (Connection conn = DBConnection.getConnection();
@@ -229,31 +239,32 @@ public class TransactionServices {
         ResultSet rs = ps.executeQuery()) {
             while (rs.next()) result.add(mapTransactionFromDB(rs));
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return result;
     }
 
-    public static Transaction mapTransactionFromDB(ResultSet rs) throws IllegalArgumentException, SQLException {
+    public static Transaction mapTransactionFromDB(ResultSet rs) throws IllegalArgumentException, DatabaseException {
         if (rs == null) throw new IllegalArgumentException("Invalid Respone from Database");
+        try {
+            Date returnDateinSQL = rs.getDate("return_date");
+            LocalDate returnDate = (returnDateinSQL != null) ? returnDateinSQL.toLocalDate() : null;
 
-        Date returnDateinSQL = rs.getDate("return_date");
-        LocalDate returnDate = (returnDateinSQL != null) ? returnDateinSQL.toLocalDate() : null;
+            MemberServices ms = new MemberServices();
+            BookServices bs = new BookServices();
 
-        MemberServices ms = new MemberServices();
-        BookServices bs = new BookServices();
-
-        Member member = ms.getMember(rs.getString("member_id"));
-        AbstractBook book = bs.getBook(rs.getString("isbn"));
+            Member member = ms.getMember(rs.getString("member_id"));
+            AbstractBook book = bs.getBook(rs.getString("isbn"));
 
 
 
-        Transaction t = new Transaction(rs.getString("transaction_id"),
-        member, book, rs.getDate("borrow_date").toLocalDate(),
-        rs.getDate("due_date").toLocalDate(), returnDate, rs.getDouble("fine_amount"));
+            Transaction t = new Transaction(rs.getString("transaction_id"),
+            member, book, rs.getDate("borrow_date").toLocalDate(),
+            rs.getDate("due_date").toLocalDate(), returnDate, rs.getDouble("fine_amount"));
 
-        return t;
+            return t;
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getErrorCode(), e);
+        }
     }
 }
-
-// !! Create Custom Exceptions for SQL Errors to replace runtime and Exception loops placed in, Catch Exceptions in Library Menu

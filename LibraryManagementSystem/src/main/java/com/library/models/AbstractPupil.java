@@ -1,5 +1,15 @@
 package com.library.models;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Set;
+
+import com.library.db.DBConnection;
+import com.library.exceptions.DatabaseException;
+import com.library.exceptions.NoOutputReceivedException;
 import com.library.interfaces.Pupil;
 
 /**
@@ -62,9 +72,9 @@ public abstract class AbstractPupil implements Pupil{
         this.address = address;
     }
     public final void setAge(int age) throws IllegalArgumentException {
-        if (age < 10 || age > 100) throw new IllegalArgumentException("Age not in acceptable range");
+        if (age < 1910 || age > Calendar.getInstance().get(Calendar.YEAR)) throw new IllegalArgumentException("Year of Birth not in acceptable range");
         this.age = age;
-    }
+    }// complete
 
     // Getters
     public String getName() {return name;}
@@ -79,7 +89,33 @@ public abstract class AbstractPupil implements Pupil{
             "Phone: " + phone + "\n" +
             "Email: " + email + "\n" +
             "Address: " + address + "\n" +
-            "Age: " + age + "\n";
+            "Year of Birth: " + age + "\n";
+    }
+    /**
+     * counts row per year to aid in generating id
+     * @param table to check
+     * @return int number of rows
+     * @throws IllegalArgumentException if invalid table type is given
+     * @throws NoOutputReceivedException if no output given from Database
+     * @throws DatabaseException from database
+     */
+    public static int countRowsPerCurrYear(String table) throws IllegalArgumentException,
+    NoOutputReceivedException, DatabaseException{
+        if (!Set.of("members", "workers").contains(table)) throw new IllegalArgumentException("Invalid Table Type");
+        String idField = (table.equals("members")) ? "member_id" : "worker_id";
+
+        String year = String.valueOf(Calendar.getInstance().get(Calendar.YEAR)).substring(2);
+        String queryString = "_" + year + "%";
+
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM " + table + " WHERE " + idField + " = ?");) {
+            ps.setString(1, queryString);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getErrorCode(), e);
+        } 
+        throw new NoOutputReceivedException();
     }
 }
-// => Change age field to contain year of birth in Members and Workers

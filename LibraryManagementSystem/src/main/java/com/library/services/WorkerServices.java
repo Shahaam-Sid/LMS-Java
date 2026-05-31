@@ -9,8 +9,9 @@ import java.util.List;
 
 import com.library.db.DBConnection;
 import com.library.db.DBUtility;
+import com.library.exceptions.ChangesNotSavedException;
+import com.library.exceptions.DatabaseException;
 import com.library.exceptions.DuplicatePupilException;
-import com.library.exceptions.MemberNotFoundException;
 import com.library.exceptions.WorkerNotFoundException;
 import com.library.models.Admin;
 
@@ -27,7 +28,7 @@ public class WorkerServices {
     /**
      * Checks if database is empty
      * @return true if empty, else not
-     * @throws SQLException Error from Database
+     * @throws DatabaseException Error from Database
      */
     public boolean isEmpty() {return DBUtility.isEmpty(TABLE);}
 
@@ -35,16 +36,15 @@ public class WorkerServices {
      * register new member
      * @param worker to register
      * @throws DuplicatePupilException if worker already exist
-     * @throws RuntimeException if query not executes correctly
-     * @throws SQLException Error from Database
+     * @throws DatabaseException Error from Database
      */
-    public void admitWorker(Admin worker) throws DuplicatePupilException {
+    public void admitWorker(Admin worker) throws DuplicatePupilException, DatabaseException {
         
         try (Connection conn = DBConnection.getConnection()) {
+            int workerTableAffected = 0;
+            int SnHTableAffected = 0;
             if (DBUtility.doesRowExists(TABLE, UIDCOL, worker.getWorkerID(), conn))
                 throw new DuplicatePupilException(worker.getWorkerID());
-            int workerTableAffected;
-            int SnHTableAffected;
             conn.setAutoCommit(false);
             try {
                 try (PreparedStatement ps = conn.prepareStatement("INSERT INTO workers VALUES (?, ?, ?, ?, ?, ?)")) {
@@ -65,16 +65,16 @@ public class WorkerServices {
                     SnHTableAffected = ps.executeUpdate();
                 }
 
-                if ((SnHTableAffected + workerTableAffected) == 2) conn.commit();
-                else conn.rollback();
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
             } finally {
+                if ((SnHTableAffected + workerTableAffected) == 2) conn.commit();
+                else conn.rollback();
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
     /**
@@ -82,9 +82,9 @@ public class WorkerServices {
      * @param id of worker to get
      * @return admin
      * @throws WorkerNotFoundException if worker not found
-     * @throws SQLException Error from Database
+     * @throws DatabaseException Error from Database
      */
-    public Admin getWorker(String id) throws WorkerNotFoundException {
+    public Admin getWorker(String id) throws WorkerNotFoundException, DatabaseException {
         String sql = """
                 SELECT *
                 FROM workers INNER JOIN salt_n_hash
@@ -98,12 +98,26 @@ public class WorkerServices {
                 if (rs.next()) return mapAdminFromDB(rs);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         throw new WorkerNotFoundException(id);
     }
+    /**
+     * Updates Worker
+     * @param targetId to update
+     * @param name new name, if empty remains unchanged
+     * @param phone new phone, if empty remains unchanged
+     * @param email new email, if empty remains unchanged
+     * @param address new address, if empty remains unchanged
+     * @param password new password, if empty remains unchanged
+     * @throws WorkerNotFoundException if worker not found
+     * @throws IllegalArgumentException
+     * @throws DatabaseException for Database
+     * @throws Exception exception may occur during hashing password
+     */
     public void updateWorker(String targetId, String name, String phone, String email, String address,
-        String password) throws MemberNotFoundException, IllegalArgumentException, Exception {
+        String password) throws WorkerNotFoundException, IllegalArgumentException,
+        DatabaseException, Exception {
             Admin worker = getWorker(targetId);
 
             try (Connection conn = DBConnection.getConnection()) {
@@ -178,34 +192,38 @@ public class WorkerServices {
                     conn.setAutoCommit(true);
                 }
             } catch (SQLException e) {
-                DBUtility.SQLExceptionLoop(e);
+                throw new DatabaseException(e.getErrorCode(), e);
             }
         }
     /**
      * removes worker
      * @param id of worker to remove
      * @throws WorkerNotFoundException if worker not found
+     * @throws ChangesNotSavedException if query doesn't executes properly
+     * @throws DatabaseException from Database
      */
-    public void removeWorker(String id) throws WorkerNotFoundException {
+    public void removeWorker(String id) throws WorkerNotFoundException, ChangesNotSavedException,
+    DatabaseException {
         try (Connection conn = DBConnection.getConnection()) {
             if (!DBUtility.doesRowExists(TABLE, UIDCOL, id, conn))
                 throw new WorkerNotFoundException(id);
             try (PreparedStatement ps = conn.prepareStatement("DELETE FROM workers WHERE worker_id = ?")) {
                 ps.setString(1, id);
                 int output = ps.executeUpdate();
-                if (output == 0) throw new RuntimeException("An Unexpected Error Occured");
+                if (output == 0) throw new ChangesNotSavedException();
             }
             
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
     }
     /**
      * searches for worker
      * @param query string for worker to search
      * @return list of results matched
+     * @throws DatabaseException from Database
      */
-    public List<Admin> searchWorker(String query) {
+    public List<Admin> searchWorker(String query) throws DatabaseException {
         List<Admin> workers = new ArrayList<>();
         String sql = """
                 SELECT *
@@ -228,15 +246,16 @@ public class WorkerServices {
                 while (rs.next()) workers.add(mapAdminFromDB(rs));
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return workers;
     }
     /**
      * returns list of all workers
      * @return list of workers
+     * @throws DatabaseException from Database
      */
-    public List<Admin> getAllWorkers() {
+    public List<Admin> getAllWorkers() throws DatabaseException {
         List<Admin> workers = new ArrayList<>();
         String sql = """
                 SELECT *
@@ -248,22 +267,31 @@ public class WorkerServices {
         ResultSet rs = ps.executeQuery()) {
             while (rs.next()) workers.add(mapAdminFromDB(rs));
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return workers;
     }
 
-    public static Admin mapAdminFromDB(ResultSet rs) throws IllegalArgumentException, SQLException{
+    /**
+     * Maps worker from Database
+     * @param rs ResultSet
+     * @return Worker
+     * @throws IllegalArgumentException if rs is not valid / is empty
+     * @throws DatabaseException from Database
+     */ 
+    public static Admin mapAdminFromDB(ResultSet rs) throws IllegalArgumentException, DatabaseException {
         if (rs == null) throw new IllegalArgumentException("Invalid Response from Database");
 
-        Admin w = new Admin(rs.getString("worker_id"), rs.getString("worker_name"), 
-        rs.getString("phone"), rs.getString("email"), rs.getString("address"), rs.getInt("age"));
+        try {
+            Admin w = new Admin(rs.getString("worker_id"), rs.getString("worker_name"), 
+            rs.getString("phone"), rs.getString("email"), rs.getString("address"), rs.getInt("age"));
 
-        w.setSalt(rs.getString("password_salt"));
-        w.setHash(rs.getString("password_hash"));
+            w.setSalt(rs.getString("password_salt"));
+            w.setHash(rs.getString("password_hash"));
 
-        return w;
+            return w;
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getErrorCode(), e);
+        }
     }
 }
-
-// !! UPDATE ALL RELATIONS IN TABLES

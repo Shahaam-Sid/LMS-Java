@@ -10,6 +10,7 @@ import com.library.db.DBConnection;
 import com.library.db.DBUtility;
 import com.library.enums.BookStatus;
 import com.library.enums.BookType;
+import com.library.exceptions.DatabaseException;
 import com.library.interfaces.Borrowable;
 import com.library.interfaces.Reservable;
 import com.library.models.Member;
@@ -86,11 +87,15 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
     public int getAvailableCount() {return availableCopies;}
     @Override
     public LocalDate calculateDueDate() {return LocalDate.now().plusDays(14);}
-
+    /**
+     * Checks if reservation queue is empty
+     * @return true if empty else false
+     */
     public boolean isReservationQueueEmpty() {return DBUtility.isEmpty("reservations");}
     // Reservable methods
+    
     @Override
-    public boolean reserve(Member member) {
+    public boolean reserve(Member member) throws DatabaseException {
         int output = 0;
         try (Connection conn = DBConnection.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM reservations WHERE member_id = ? AND isbn = ?")) {
@@ -101,10 +106,10 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                 }
             }
             String sql = """
-                    INSERT INTO book_reservations (isbn, member_id, notified, position)
+                    INSERT INTO reservations (isbn, member_id, notified, position)
                     VALUES (?, ?, 0, (
                         SELECT COALESCE(MAX(position), 0) + 1
-                        FROM book_reservations AS br
+                        FROM reservations AS br
                         WHERE br.isbn = ?
                     ))
                     """;
@@ -116,15 +121,21 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                 output = ps.executeUpdate();
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
 
         return output == 1;
     }
-    public Member peakReservationQueue() {
+    /**
+     * returns first in reservation queue
+     * @return Member object
+     * @throws DatabaseException Error From Database
+     * @throws RuntimeException if Queue is Empty
+     */
+    public Member peakReservationQueue() throws DatabaseException, RuntimeException {
         String sql = """
                 SELECT member_id, position
-                FROM book_reservations
+                FROM reservations
                 WHERE isbn = ?
                 ORDER BY position ASC
                 LIMIT 1
@@ -136,19 +147,19 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                 if (rs.next()) return MemberServices.mapMemberFromDB(rs);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
-        throw new RuntimeException("No Record found"); // => Custom Exception
+        throw new RuntimeException("No Record found");
     }
     @Override
-    public boolean cancelReservation(Member member) {
+    public boolean cancelReservation(Member member) throws DatabaseException {
         int rowsAffected = 0;
         try (Connection conn = DBConnection.getConnection()) {
             try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM reservations WHERE member_id = ? AND isbn = ?")) {
                 ps.setString(1, member.getMemberID());
                 ps.setString(2, getISBN());
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) return false;
+                    if (!rs.next()) return false;
                 }
             }
             int targetPosition = getQueuePosition(member);
@@ -156,7 +167,7 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
             try {
                 conn.setAutoCommit(false);
                 String sql1 = """
-                        DELETE FROM book_reservations
+                        DELETE FROM reservations
                         WHERE isbn = ? AND member_id = ?;
                         """;
                 try (PreparedStatement ps = conn.prepareStatement(sql1)) {
@@ -165,7 +176,7 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                     rowsAffected += ps.executeUpdate();
                 }
                 String sql2 = """
-                        UPDATE book_reservations
+                        UPDATE reservations
                         SET position = position - 1
                         WHERE isbn = ? AND position > ?;
                         """;
@@ -183,12 +194,12 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return rowsAffected == 2;
     }
     @Override
-    public int getQueuePosition(Member member) {
+    public int getQueuePosition(Member member) throws DatabaseException {
         try (Connection conn = DBConnection.getConnection();
         PreparedStatement ps = conn.prepareStatement("SELECT position FROM reservations WHERE member_id = ? AND isbn = ?")) {
             ps.setString(1, member.getMemberID());
@@ -197,16 +208,16 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                 if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return -1;
     }
     @Override
-    public String getQueue() {
+    public String getQueue() throws DatabaseException {
         StringBuilder sb = new StringBuilder("Reservation Queue for " + getTitle() + " | " + getISBN() + "\n\n");
 
         try (Connection conn = DBConnection.getConnection();
-        PreparedStatement ps = conn.prepareStatement("SELECT member_id FROM transactions WHERE isbn = ?")) {
+        PreparedStatement ps = conn.prepareStatement("SELECT member_id FROM reservations WHERE isbn = ?")) {
             ps.setString(1, getISBN());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -215,9 +226,29 @@ public class PhysicalBook extends AbstractBook implements Borrowable, Reservable
                 }
             }
         } catch (SQLException e) {
-            DBUtility.SQLExceptionLoop(e);
+            throw new DatabaseException(e.getErrorCode(), e);
         }
         return sb.toString();
+    }
+    /**
+     * Notifies Next Member in Queue
+     * @throws DatabaseException from Database
+     */
+    public void notifyNextInQueue() throws DatabaseException, RuntimeException {
+        Member member = peakReservationQueue();
+        try (Connection conn = DBConnection.getConnection();
+        PreparedStatement ps = conn.prepareStatement("""
+                UPDATE reservations
+                SET notified = 1
+                WHERE isbn = ? AND position = 1;
+                """)) {
+
+            ps.setString(1, getISBN());
+            int output = ps.executeUpdate();
+            if (output == 1) System.out.println("Member " + member.getMemberID() + " is next in Reservation Queue for Book " + getISBN());
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getErrorCode(), e);
+        }
     }
 
     @Override

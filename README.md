@@ -29,6 +29,7 @@ A comprehensive Java-based Library Management System designed to streamline libr
 - **Inventory Tracking**: Track available copies and book status
 - **Book Search**: Search by title, author, ISBN, or genre
 - **Catalog Management**: Add, remove, and view all books in the system
+- **Updating Option**: Change Shelf Location, Total and Available Copies of books
 
 ### Member Management
 
@@ -37,6 +38,7 @@ A comprehensive Java-based Library Management System designed to streamline libr
 - **Borrow Limits**: Enforce maximum 3 concurrent book borrowings per member
 - **Member Search**: Search by name, ID, or email
 - **Status Tracking**: Track member status (ACTIVE, INACTIVE)
+- **Updating Option**: Change Name, Phone, Email, Address and Status
 
 ### Transaction Management
 
@@ -50,34 +52,50 @@ A comprehensive Java-based Library Management System designed to streamline libr
 
 - **Worker Accounts**: Add library staff with secure password management
 - **Authentication**: Login system with password hashing and verification
+- **Updating Option**: Change Name, Phone, Email, Address and Password
 
 ### Search Functionality
 
 - **Advanced Search**: Search books, members, and workers across multiple fields
 - **Flexible Querying**: Search by various attributes (title, author, ISBN, genre, email, etc.)
 
+### Reserving Functionality
+
+- **Reserve**: Reserve Books if are not available to Borrow
+- **Notify**: Notify when book is ready to be borrowed
+
 ## 🏗️ Project Structure
 
 ```
-LibraryManagementSystem/
-└───src
+main
+└───java
     └───com
         └───library
             │   Main.java
             │   
+            ├───db
+            │       DBConnection.java
+            │       DBUtility.java
+            │       
             ├───enums
             │       BookStatus.java
             │       BookType.java
             │       MemberStatus.java
             │       
             ├───exceptions
+            │       BookAlreadyBorrowedException.java
             │       BookNotAvailableException.java
             │       BookNotFoundException.java
+            │       CannotDeleteEntityException.java
+            │       ChangesNotSavedException.java
+            │       DatabaseException.java
             │       DuplicateISBNException.java
             │       DuplicatePupilException.java
             │       InvalidPasswordException.java
             │       MemberLimitExceededException.java
             │       MemberNotFoundException.java
+            │       NoActiveBorrowRecordFoundException.java
+            │       NoOutputReceivedException.java
             │       WorkerNotFoundException.java
             │       
             ├───interfaces
@@ -114,6 +132,7 @@ LibraryManagementSystem/
 ## 🏛️ Architecture
 
 [**Documentation and UMLs**](./LibraryManagementSystem/docs/architecture.md)
+[**Database and ERDs**](./LibraryManagementSystem/docs/database.md)
 
 ### Design Patterns Used
 
@@ -146,17 +165,17 @@ AbstractBook (Abstract Base, implements Borrowable, Reservable)
 
 ## 🛠️ Technologies
 
-- **Language**: Java (Java 8+)
+- **Language**: Java (Java 21)
 - **IDE**: VS Code
-- **Build System**: Maven(In Progress)
-- **Data Storage**: MySQL(In Progress)
+- **Build System**: Maven
+- **Data Storage**: MySQL
 - **Security**: Password hashing with PBKDF2
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Java 8 or higher
+- Java 21
 - A Java IDE or command-line compiler
 
 ### Installation
@@ -200,6 +219,7 @@ AbstractBook (Abstract Base, implements Borrowable, Reservable)
 3. Borrow/Return   - Process book transactions
 4. Search          - Search across system
 5. Workers         - Manage library staff
+6. Reserve         - Cancel, View, Peek Reservation Queue
 9. Print Menu      - Reprint menu options
 0. Log out         - Exit system
 ```
@@ -225,6 +245,11 @@ AbstractBook (Abstract Base, implements Borrowable, Reservable)
 2. Enter ISBN and Member ID
 3. System validates member limit (max 3 books) and book availability
 4. Due date is automatically calculated (14 days)
+
+#### Reserving a Book
+
+1. Make an attempt to Borrow Book
+2. If book not available to Borrow Select `Reserve`
 
 #### Returning a Book
 
@@ -276,6 +301,12 @@ The system uses custom exceptions for better error handling:
 - `DuplicateISBNException`: When adding a book with existing ISBN
 - `DuplicatePupilException`: When registering duplicate member/worker
 - `InvalidPasswordException`: When password doesn't meet requirements
+- `BookAlreadyBorrowedException`: When a book is already borrowed by the Member
+- `CannotDeleteEntityException`: When Book/Member cannot be deleted due to an Active Transaction
+- `ChangesNotSavedException`: When for some reason changes aren't saved to Database
+- `DatabaseException`: When Database returns an Error
+- `NoActiveBorrowRecordFoundException`: When no Borrow found
+- `NoOutputRecievedException`: When no output returned from Database
 
 ## 🔐 Security Features
 
@@ -311,9 +342,6 @@ Transaction exists? → Calculate overdue days → Calculate fine
 
 ## 🚧 Future Enhancements
 
-- Database persistence (MySQL, PostgreSQL)
-- Reservation system for unavailable books
-- Fine payment tracking
 - Book renewal functionality
 - Email notifications for overdue books
 - Report generation
