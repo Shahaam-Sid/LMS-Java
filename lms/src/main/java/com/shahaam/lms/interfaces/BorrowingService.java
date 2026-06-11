@@ -25,4 +25,10 @@ public interface BorrowingService {
      * @return Due Date
      */
     LocalDateTime calculateDueDate();
+    /**
+     * calculates late fee
+     * @param daysLate int number of days
+     * @return double late fee
+     */
+    public abstract double calculateLateFee(int daysLate);
 }

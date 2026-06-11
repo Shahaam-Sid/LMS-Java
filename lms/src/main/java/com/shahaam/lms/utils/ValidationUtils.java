@@ -2,7 +2,7 @@ package com.shahaam.lms.utils;
 
 public class ValidationUtils {
 
-    protected static boolean isValidISBN(String isbn) {
+    public static boolean isValidISBN(String isbn) {
         int n = isbn.length();
 
         if (n == 10) {

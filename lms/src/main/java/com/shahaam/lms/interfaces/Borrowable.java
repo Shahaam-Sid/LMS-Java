@@ -13,5 +13,5 @@ public interface Borrowable {
      * get the number of copies left
      * @return number of copies available
      */
-    int getAvailableCount();
+    Integer getAvailableCount();
 }
