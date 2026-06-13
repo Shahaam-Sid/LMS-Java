@@ -1,6 +1,6 @@
 package com.shahaam.lms.interfaces;
 
-import com.shahaam.lms.models.Member;
+import com.shahaam.lms.models.Pupil.Member;
 
 /**
  * interface for reservable books

@@ -37,7 +37,7 @@ public class AudioBook extends AbstractDigitalBook{
     }
     
     // setter
-    public final void setNarrator(String narrator) throws IllegalArgumentException {
+    public void setNarrator(String narrator) throws IllegalArgumentException {
         ValidationUtils.checkNullString(narrator, "Narrator");
         ValidationUtils.checkLengthString(narrator, 3, 100, "Narrator");
 

@@ -1,6 +1,5 @@
 package com.shahaam.lms.dto.book;
 
-import com.shahaam.lms.enums.BookStatus;
 import com.shahaam.lms.enums.BookType;
 
 import jakarta.validation.constraints.Max;
@@ -12,7 +11,7 @@ import jakarta.validation.constraints.Size;
 public record PhysicalBookRequestDTO(
 
     @NotBlank(message="ISBN cannot be blank")
-    @Size(max=13) 
+    @Size(max = 13, min  = 10, message = "isbn must be 10 or 13 characters")
     String ISBN,
 
     @NotBlank(message="Title cannot be blank")
@@ -32,9 +31,6 @@ public record PhysicalBookRequestDTO(
     @Min(value = -1000, message = "Invalid Year")
     Integer publishedYear,
 
-    @NotNull
-    BookStatus status,
-
     @NotBlank(message="shelfLocation cannot be blank")
     @Size(max=25)
     String shelfLocation,
@@ -42,10 +38,6 @@ public record PhysicalBookRequestDTO(
     @NotNull
     @Min(value=1, message="Total copies must greater then 0")
     Integer totalCopies,
-
-    @NotNull
-    @Min(value=0, message="Available copies must positive value")
-    Integer availableCopies,
 
     @NotNull
     BookType type

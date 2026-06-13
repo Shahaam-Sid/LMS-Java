@@ -1,6 +1,5 @@
 package com.shahaam.lms.dto.book;
 
-import com.shahaam.lms.enums.BookStatus;
 import com.shahaam.lms.enums.BookType;
 
 import jakarta.validation.constraints.Digits;
@@ -14,7 +13,7 @@ import jakarta.validation.constraints.Size;
 public record EBookRequestDTO(
 
     @NotBlank(message="ISBN cannot be blank")
-    @Size(max=13) 
+    @Size(max = 13, min  = 10, message = "isbn must be 10 or 13 characters")
     String ISBN,
 
     @NotBlank(message="Title cannot be blank")
@@ -33,9 +32,6 @@ public record EBookRequestDTO(
     @Max(value = 9999, message = "Invalid Year")
     @Min(value = -1000, message = "Invalid Year")
     Integer publishedYear,
-
-    @NotNull
-    BookStatus status,
 
     @NotBlank(message="dowload URL cannot be blank")
     @Size(max=2000)

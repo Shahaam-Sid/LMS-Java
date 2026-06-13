@@ -7,7 +7,6 @@ import com.shahaam.lms.utils.ValidationUtils;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -28,11 +27,9 @@ public class PhysicalBook extends AbstractBook implements Borrowable {
     private String shelfLocation;
 
     @Column(name = "total_copies")
-    @Min(value=1, message="Total copies must greater then 0")
     private Integer totalCopies;
 
     @Column(name = "available_copies")
-    @Min(value=0, message="Available copies must positive value")
     private Integer availableCopies;
 
     public PhysicalBook(String ISBN, String title, String author, String genre,
@@ -51,28 +48,44 @@ public class PhysicalBook extends AbstractBook implements Borrowable {
         }
 
         // setter
-    public final void setShelfLocation(String shelfLocation) throws IllegalArgumentException {
+    public void setShelfLocation(String shelfLocation) throws IllegalArgumentException {
         ValidationUtils.checkNullString(shelfLocation, "Shelf Location");
         ValidationUtils.checkLengthString(shelfLocation, 1, 25, "Shelf Location");
 
         this.shelfLocation = shelfLocation;
     }
-    public final void setTotalCopies(Integer totalCopies) throws IllegalArgumentException {
-        if (totalCopies < 1) throw new IllegalArgumentException("Total Book Copies must be 1 or more");
+    public void setTotalCopies(Integer totalCopies) throws IllegalArgumentException {
+        if (totalCopies != null && totalCopies < 1) throw new IllegalArgumentException("Total Book Copies must be 1 or more");
 
         this.totalCopies = totalCopies;
-    }
-    public final void setAvailableCopies(Integer availableCopies) throws IllegalArgumentException {
-        if (availableCopies < 0 || availableCopies > totalCopies) 
+    } // Total Copies to be set not null before setting available copies
+    public void setAvailableCopies(Integer availableCopies) throws IllegalArgumentException {
+        if (totalCopies == null) {
+            this.availableCopies = null;
+            return;
+        }
+        if (availableCopies != null && (availableCopies < 0 || availableCopies > totalCopies)) 
             throw new IllegalArgumentException("Available Copies must atleast 0 and lesser or equals to total copies");
     
         this.availableCopies = availableCopies;
     }
 
+    public void decrementAvailableCopies() {
+        if (availableCopies == 0)
+            throw new IllegalArgumentException("Available copies cannot be decremented, is 0");
+        availableCopies--;
+    }
+    public void incrementAvailableCopies() {
+        if (availableCopies == totalCopies)
+            throw new IllegalArgumentException("Available copies cannot be greater then Total copies");
+        availableCopies++;
+    }
+
     // Borrowable methods
     @Override
     public boolean isAvailable() {return (status == BookStatus.AVAILABLE) && (availableCopies > 0);}
-
+    @Override
+    public Double calculateLateFee(int daysLate) {return daysLate * 5.0;}
     @Override
     public Integer getAvailableCount() {return availableCopies;}
 }

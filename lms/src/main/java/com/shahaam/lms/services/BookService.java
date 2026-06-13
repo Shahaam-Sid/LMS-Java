@@ -49,12 +49,11 @@ public class BookService {
     }
     @Transactional(readOnly = true)
     public BookResponseDTO getBook(String isbn) {
-        return mapToResponseDTO(bookRepo.findById(isbn)
-        .orElseThrow(() -> new BookNotFoundException(isbn)));
+        return mapToResponseDTO(getBookAsObj(isbn));
     }
     @Transactional(readOnly = true)
     public List<BookResponseDTO> getAllBooks() {
-        return bookRepo.findAll().stream().map(BookService::mapToResponseDTO).toList();
+        return bookRepo.findAll().stream().map(this::mapToResponseDTO).toList();
     }
     @Transactional
     public void removeBook(String isbn) {
@@ -63,8 +62,7 @@ public class BookService {
     }
     @Transactional
     public BookResponseDTO updateBook(BookUpdateRequestDTO req, String isbn) {
-        AbstractBook book = bookRepo.findById(isbn)
-        .orElseThrow(() -> new BookNotFoundException(isbn));
+        AbstractBook book = getBookAsObj(isbn);
 
         if (req.status() != null) {book.setStatus(req.status());}
 
@@ -81,24 +79,31 @@ public class BookService {
     }
     @Transactional(readOnly = true)
     public List<BookResponseDTO> searchKeyword(String keyword) {
-        return bookRepo.searchMatching(keyword).stream().map(BookService::mapToResponseDTO).toList();
+        return bookRepo.searchMatching(keyword).stream().map(this::mapToResponseDTO).toList();
     }
     @Transactional(readOnly = true)
     public boolean isBookAvailable(String isbn) {
-        AbstractBook book = bookRepo.findById(isbn).orElseThrow(() -> new BookNotFoundException(isbn));
+        AbstractBook book = getBookAsObj(isbn);
         if (book instanceof PhysicalBook pBook) {return pBook.isAvailable();}
         else if (book instanceof AbstractDigitalBook adBook) {return adBook.isAvailable();}
         else throw new InvalidBookTypeException(isbn);
     }
     @Transactional(readOnly = true)
     public List<BookResponseDTO> getAvailableBooks() {
-        return bookRepo.findAvailableBooks().stream().map(BookService::mapToResponseDTO).toList();
+        return bookRepo.findAvailableBooks().stream().map(this::mapToResponseDTO).toList();
     }
 
 
 
     // helper methods
-    private static BookResponseDTO mapToResponseDTO(AbstractBook book) {
+
+    @Transactional(readOnly = true)
+    private AbstractBook getBookAsObj(String isbn) {
+        return bookRepo.findById(isbn)
+        .orElseThrow(() -> new BookNotFoundException(isbn));
+    }
+
+    private BookResponseDTO mapToResponseDTO(AbstractBook book) {
 
         return switch(book) {
             case PhysicalBook pb -> new PhysicalBookResponseDTO(
@@ -119,21 +124,20 @@ public class BookService {
             default -> null; 
         };
     }
-    private static AbstractBook mapFromRequestDTO(BookRequestDTO req) {
+    private AbstractBook mapFromRequestDTO(BookRequestDTO req) {
 
         return switch(req) {
             case PhysicalBookRequestDTO pReq -> new PhysicalBook(
-                pReq.ISBN(), pReq.title(), pReq.author(), pReq.genre(), pReq.status(),
-                pReq.publishedYear(), pReq.shelfLocation(), pReq.availableCopies(), pReq.totalCopies()
+                pReq.ISBN(), pReq.title(), pReq.author(), pReq.genre(),
+                pReq.publishedYear(), pReq.shelfLocation(), pReq.totalCopies()
             );
             case EBookRequestDTO eReq -> new EBook(
-                eReq.ISBN(), eReq.title(), eReq.author(), eReq.genre(), eReq.status(),
-                eReq.publishedYear(), eReq.downloadURL(), eReq.format(), eReq.fileSizeMB()
+                eReq.ISBN(), eReq.title(), eReq.author(), eReq.genre(), eReq.publishedYear(),
+                eReq.downloadURL(), eReq.format(), eReq.fileSizeMB()
             );
             case AudioBookRequestDTO aReq -> new AudioBook(
-                aReq.ISBN(), aReq.title(), aReq.author(), aReq.genre(), aReq.status(),
-                aReq.publishedYear(), aReq.downloadURL(), aReq.format(), aReq.fileSizeMB(),
-                aReq.narrator()
+                aReq.ISBN(), aReq.title(), aReq.author(), aReq.genre(), aReq.publishedYear(),
+                aReq.downloadURL(), aReq.format(), aReq.fileSizeMB(), aReq.narrator()
             );
         };
     }

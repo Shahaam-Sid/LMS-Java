@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -23,12 +24,15 @@ import com.shahaam.lms.dto.book.PhysicalBookResponseDTO;
 import com.shahaam.lms.services.BookService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
 @RequestMapping("/api/v1/books")
+@Validated
 public class BookController {
 
     BookService bs;
@@ -44,11 +48,13 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
     @GetMapping("/{isbn}")
-    public ResponseEntity<BookResponseDTO> getBook(@PathVariable String isbn) {
+    public ResponseEntity<BookResponseDTO> getBook(
+        @PathVariable @NotBlank @Size(min=10, max=13, message = "Invalid ISBN") String isbn
+    ) {
         return ResponseEntity.ok(bs.getBook(isbn));
     }
     @GetMapping("/search")
-    public ResponseEntity<List<BookResponseDTO>> searchBooks(@RequestParam String q) {
+    public ResponseEntity<List<BookResponseDTO>> searchBooks(@RequestParam @NotBlank String q) {
         List<BookResponseDTO> results = bs.searchKeyword(q);
         return ResponseEntity.ok(results);
     }
@@ -73,15 +79,19 @@ public class BookController {
     }
 
     @PatchMapping("/{isbn}")
-    public ResponseEntity<BookResponseDTO> updateBook(@PathVariable String isbn, @RequestBody @Valid BookUpdateRequestDTO req) {
+    public ResponseEntity<BookResponseDTO> updateBook(
+        @PathVariable @NotBlank @Size(min=10, max=13, message = "Invalid ISBN") String isbn,
+        @RequestBody @Valid BookUpdateRequestDTO req
+    ) {
         BookResponseDTO output = bs.updateBook(req, isbn);
         return ResponseEntity.ok(output);
     }
 
     @DeleteMapping("/{isbn}")
-    public ResponseEntity<Void> deleteBook(@PathVariable String isbn) {
+    public ResponseEntity<Void> deleteBook(
+        @PathVariable @NotBlank @Size(min=10, max=13, message = "Invalid ISBN") String isbn
+    ) {
         bs.removeBook(isbn);
         return ResponseEntity.noContent().build();
-    }
-    
+    }   
 }

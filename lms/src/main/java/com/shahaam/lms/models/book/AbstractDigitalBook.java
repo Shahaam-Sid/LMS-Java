@@ -49,20 +49,20 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
         }
 
     // setter
-    public final void setDownloadURL(String url) throws IllegalArgumentException {
+    public void setDownloadURL(String url) throws IllegalArgumentException {
         ValidationUtils.checkNullString(url, "Download URL");
         ValidationUtils.checkLengthString(url, 15, 2000, "Download URL");
 
         this.downloadURL = url;
     }
-    public final void setFormat(String format) throws IllegalArgumentException {
+    public void setFormat(String format) throws IllegalArgumentException {
         ValidationUtils.checkNullString(format, "File Format");
         ValidationUtils.checkLengthString(format, 3, 30, "File Format");
 
         this.format = format;
     }
-    public final void setFileSizeMB(Double fileSizeMB) throws IllegalArgumentException {
-        if (fileSizeMB <= 0) throw new IllegalArgumentException("File must be bigger then ) mbs");
+    public void setFileSizeMB(Double fileSizeMB) throws IllegalArgumentException {
+        if (fileSizeMB != null && fileSizeMB <= 0) throw new IllegalArgumentException("File must be bigger then ) mbs");
         
         this.fileSizeMB = fileSizeMB;
     }
@@ -72,4 +72,6 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
     public boolean isAvailable() {return true;}
     @Override
     public Integer getAvailableCount() {return Integer.MAX_VALUE;}
+    @Override
+    public Double calculateLateFee(int daysLate) {return daysLate * 2.0;}
 }
