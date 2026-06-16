@@ -29,7 +29,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({BookNotFoundException.class,
         MemberNotFoundException.class,
         WorkerNotFoundException.class,
-        NoActiveBorrowRecordFoundException.class
+        NoActiveBorrowRecordFoundException.class,
+        NoBorrowRecordFoundException.class,
+        ReservationRecordNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(
         RuntimeException ex,

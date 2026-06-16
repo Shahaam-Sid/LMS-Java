@@ -1,32 +1,16 @@
 package com.shahaam.lms.interfaces;
 
-import com.shahaam.lms.models.Pupil.Member;
+import java.util.List;
 
+import com.shahaam.lms.dto.reservation.ReservationResponseDTO;
 /**
  * interface for reservable books
  */
 public interface ReservingService {
-    /**
-     * reserve a book for a member
-     * @param member that reserves
-     * @return true if successful else false
-     */
-    boolean reserve(Member member);
-    /**
-     * cancels a reservation
-     * @param member that cancels reservation
-     * @return true if successful else false
-     */
-    boolean cancelReservation(Member member);
-    /**
-     * returns the Position of reserver in queue
-     * @param member that reserves
-     * @return position
-     */
-    int getQueuePosition(Member member);
-    /**
-     * returns the list of all Members in Queue
-     * @return members
-     */
-    public String getQueue();
+
+    ReservationResponseDTO addToQueue(String isbn, String memberId);
+
+    public void cancelReservation(String isbn, String memberId);
+
+    public List<ReservationResponseDTO> getQueue(String isbn);
 }
