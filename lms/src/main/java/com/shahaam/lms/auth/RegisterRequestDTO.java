@@ -1,12 +1,12 @@
-package com.shahaam.lms.dto.member;
+package com.shahaam.lms.auth;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record MemberRequestDTO(
-
+public record RegisterRequestDTO(
+    
     @NotBlank(message = "name cannot be blank")
     @Size(max = 35, min = 3, message = "name must contain 3 -35 characters")
     String name,
@@ -24,5 +24,10 @@ public record MemberRequestDTO(
 
     @NotNull(message = "birth_year cannot be null")
     @Min(value = 1910, message = "birthYear cannot be lesser then 1910")
-    Integer birthYear
+    Integer birthYear,
+
+    @NotBlank(message = "password cannot be blank")
+    @Size(min = 8, message = "password cannot be less then 8 characters")
+    String password
+
 ) {}

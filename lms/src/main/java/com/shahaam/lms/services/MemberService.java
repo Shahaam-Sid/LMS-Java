@@ -14,14 +14,13 @@ import com.shahaam.lms.exceptions.MemberNotFoundException;
 import com.shahaam.lms.models.Pupil.Member;
 import com.shahaam.lms.repositories.MemberRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class MemberService {
 
-    private MemberRepository memberRepo;
-
-    public MemberService(MemberRepository memberRepo) {
-        this.memberRepo = memberRepo;
-    }
+    private final MemberRepository memberRepo;
 
     @Transactional(readOnly = true)
     public long getMembersCount() {

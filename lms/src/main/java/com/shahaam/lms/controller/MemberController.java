@@ -24,17 +24,15 @@ import com.shahaam.lms.services.MemberService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/members")
 @Validated
 public class MemberController{
 
-    MemberService ms;
-
-    public MemberController(MemberService ms) {
-        this.ms = ms;
-    }
+    private final MemberService ms;
 
     @GetMapping
     public ResponseEntity<List<MemberResponseDTO>> getAllMembers() {

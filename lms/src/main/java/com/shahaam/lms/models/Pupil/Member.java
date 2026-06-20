@@ -19,7 +19,7 @@ import lombok.ToString;
 public class Member extends AbstractPupil {
 
     @Id
-    @Column(name = "member_id", length = 9, nullable = false)
+    @Column(name = "member_id", length = 9)
     private String memberID;
 
     @Column(name = "status", nullable = false)

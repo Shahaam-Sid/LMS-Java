@@ -19,10 +19,10 @@ public abstract class AbstractPupil {
     @Column(name = "name", length = 35, nullable = false)
     private String name;
 
-    @Column(name = "phone", length = 11, nullable = false)
+    @Column(name = "phone", length = 11, nullable = false, unique = true)
     private String phone;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
     @Column(name = "address", length = 55, nullable = false)

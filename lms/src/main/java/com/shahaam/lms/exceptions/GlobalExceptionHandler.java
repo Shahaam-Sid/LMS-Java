@@ -4,6 +4,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -120,6 +122,22 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(400).body(
             new ErrorResponse(400, "Bad Request", message, req.getRequestURI())
+        );
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(
+            BadCredentialsException ex, HttpServletRequest req) {
+        return ResponseEntity.status(401).body(
+            new ErrorResponse(401, "Unauthorized", "Invalid email or password", req.getRequestURI())
+        );
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameNotFound(
+            UsernameNotFoundException ex, HttpServletRequest req) {
+        return ResponseEntity.status(401).body(
+            new ErrorResponse(401, "Unauthorized", "Invalid email or password", req.getRequestURI())
         );
     }
 

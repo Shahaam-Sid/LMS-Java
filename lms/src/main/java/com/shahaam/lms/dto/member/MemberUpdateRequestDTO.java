@@ -5,7 +5,7 @@ import com.shahaam.lms.enums.MemberStatus;
 import jakarta.validation.constraints.Size;
 
 public record MemberUpdateRequestDTO(
-    @Size(max = 35, message = "name cannot be null")
+    @Size(max = 35, min = 3, message = "name must contain 3 -35 characters")
     String name,
 
     @Size(max = 11, min = 11, message = "phone must be exactly 11 digits")

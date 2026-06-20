@@ -20,26 +20,21 @@ import com.shahaam.lms.repositories.BookRepository;
 import com.shahaam.lms.repositories.MemberRepository;
 import com.shahaam.lms.repositories.ReservationRepository;
 
+import lombok.RequiredArgsConstructor;
+
 
 @Service
+@RequiredArgsConstructor
 public class ReservationService implements ReservingService {
-    private final ReservationRepository reservationRepository;
-    private ReservationRepository reservationRepo;
-    private MemberRepository memberRepo;
-    private BookRepository bookRepo;
-    
-    public ReservationService(ReservationRepository reservationRepo, MemberRepository memberRepo,
-            BookRepository bookRepo, ReservationRepository reservationRepository) {
-        this.reservationRepo = reservationRepo;
-        this.memberRepo = memberRepo;
-        this.bookRepo = bookRepo;
-        this.reservationRepository = reservationRepository;
-    }
+
+    private final ReservationRepository reservationRepo;
+    private final MemberRepository memberRepo;
+    private final BookRepository bookRepo;
 
     @Override
     @Transactional
     public ReservationResponseDTO addToQueue(String isbn, String memberId) {
-        if (reservationRepository.existsByIdIsbnAndIdMemberId(isbn, memberId))
+        if (reservationRepo.existsByIdIsbnAndIdMemberId(isbn, memberId))
             throw new BookAlreadyBorrowedException(isbn, memberId);
 
         AbstractBook book = bookRepo.findById(isbn).orElseThrow(() -> new BookNotFoundException(isbn));

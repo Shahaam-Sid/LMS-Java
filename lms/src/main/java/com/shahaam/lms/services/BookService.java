@@ -25,14 +25,13 @@ import com.shahaam.lms.models.book.EBook;
 import com.shahaam.lms.models.book.PhysicalBook;
 import com.shahaam.lms.repositories.BookRepository;
 
+import lombok.RequiredArgsConstructor;
+
 
 @Service
+@RequiredArgsConstructor
 public class BookService {
     private final BookRepository bookRepo;
-    
-    public BookService(BookRepository bookRepo) {
-        this.bookRepo = bookRepo;
-    }
 
     @Transactional(readOnly = true)
     public long getBooksCount() {

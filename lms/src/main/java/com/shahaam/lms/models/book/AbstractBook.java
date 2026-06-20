@@ -26,7 +26,7 @@ import lombok.ToString;
 @ToString(callSuper=true)
 public abstract class AbstractBook {
     @Id
-    @Column(name = "isbn",length=13, nullable = false)
+    @Column(name = "isbn",length=13)
     protected String ISBN;
 
     @Column(name = "title" ,length=50, nullable = false)

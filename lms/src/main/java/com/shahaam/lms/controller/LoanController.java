@@ -20,17 +20,15 @@ import com.shahaam.lms.services.LoanService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/loans")
 @Validated
 public class LoanController {
 
-    private LoanService ls;
-
-    public LoanController(LoanService ls) {
-        this.ls = ls;
-    }
+    private final LoanService ls;
 
     @GetMapping
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans() {

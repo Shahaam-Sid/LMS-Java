@@ -26,21 +26,17 @@ import com.shahaam.lms.services.BookService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
-
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/books")
 @Validated
 public class BookController {
 
-    BookService bs;
-
-    public BookController(BookService bs) {
-        this.bs = bs;
-    }
-
+    private final BookService bs;
 
     @GetMapping
     public ResponseEntity<List<BookResponseDTO>> getAllBooks() {

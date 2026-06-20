@@ -26,18 +26,15 @@ import com.shahaam.lms.repositories.BookRepository;
 import com.shahaam.lms.repositories.LoanRepository;
 import com.shahaam.lms.repositories.MemberRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class LoanService {
 
     private final LoanRepository loanRepo;
     private final BookRepository bookRepo;
     private final MemberRepository memberRepo;
-    
-    public LoanService(LoanRepository loanRepo, BookRepository bookRepo, MemberRepository memberRepo) {
-        this.loanRepo = loanRepo;
-        this.bookRepo = bookRepo;
-        this.memberRepo = memberRepo;
-    }
 
     @Transactional(readOnly = true)
     public LoanResponseDTO getLoan(String loanID) {
@@ -123,6 +120,8 @@ public class LoanService {
         );
     }
 
+    
+    @SuppressWarnings("unused")
     private static LocalDate stringtoDate(String date) {
         return LocalDate.parse(date, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
     }
