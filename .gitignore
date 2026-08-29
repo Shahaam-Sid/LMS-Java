@@ -1,16 +1,12 @@
-# Compiled class file
+# ========================
+# Java
+# ========================
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package Files
 *.jar
 *.war
 *.nar
@@ -19,42 +15,64 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# JVM crash logs
 hs_err_pid*
 replay_pid*
 
-# Maven build output
+# ========================
+# Build
+# ========================
 target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+.mvn/wrapper/maven-wrapper.jar
+
+# ========================
+# IDEs
+# ========================
+
+# IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse / STS
+.classpath
+.factorypath
+.project
+.settings/
+.apt_generated
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
 
 # VS Code
 .vscode/
 
-# IntelliJ (in case you ever switch)
-.idea/
-*.iml
-
-# Eclipse
-.classpath
-.project
-.settings/
-
-# OS files
+# ========================
+# OS
+# ========================
 Thumbs.db
 .DS_Store
 
-# Compiled class files (redundant with target/ but safe to include)
-*.class
-
-# Log files
-*.log
+# ========================
+# Project-specific
+# ========================
+.github/
+.env
+application.properties
+HELP.md
 
 # Visual Paradigm
 *.vpp.lck
 *.vpp.bak_*
-
-#done by author
-.vscode/
-.github/
-
-#dotenv
-.env
