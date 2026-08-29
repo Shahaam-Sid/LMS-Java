@@ -27,6 +27,7 @@ public abstract class AbstractDigitalBook extends AbstractBook implements Borrow
     @Column(name = "format", length=30)
     private String format;
 
+    @Column(name = "file_size_mb")
     private Double fileSizeMB;
 
     public AbstractDigitalBook(String ISBN, String title, String author, String genre,

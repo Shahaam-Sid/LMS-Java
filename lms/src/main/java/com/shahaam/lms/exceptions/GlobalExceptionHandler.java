@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import jakarta.servlet.http.HttpServletRequest;
 import tools.jackson.databind.exc.InvalidFormatException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

@@ -8,7 +8,7 @@ import com.shahaam.lms.dto.reservation.ReservationResponseDTO;
  */
 public interface ReservingService {
 
-    ReservationResponseDTO addToQueue(String isbn, String memberId);
+    public ReservationResponseDTO addToQueue(String isbn, String memberId);
 
     public void cancelReservation(String isbn, String memberId);
 
