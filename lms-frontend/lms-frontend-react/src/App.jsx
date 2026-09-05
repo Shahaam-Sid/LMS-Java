@@ -1,11 +1,8 @@
-import FormField from "./components/FormField"
+import { RouterProvider } from "react-router-dom"
+import { router } from "./routes/appRoutes"
 
 function App() {
-  return (
-    <>
-    <FormField label="Email"></FormField>
-    </>
-  )
+  return <RouterProvider  router={router}/>
 }
 
 export default App
