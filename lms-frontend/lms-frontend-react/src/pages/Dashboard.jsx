@@ -1,20 +1,26 @@
-import { useUser } from "../hooks/useUser";
-import FloatingButton from "../components/FloatingButton";
-import { useNavigate } from "react-router-dom";
+import SectionHeader from "../components/SectionHeader";
+import { IconButton } from "../components/IconButtons";
+import { PlusIcon, MinusIcon, CheckIcon } from "../components/Icons";
 
 export default function Dashboard() {
 
-    const { logOut } = useUser();
-    const navigate = useNavigate();
-
     function onClick() {
-        logOut();
-        navigate("/door-step", {replace: true});
+
     }
+    
 
     return (
         <>
-            <FloatingButton text="Logout" onClick={onClick}/>
+            <SectionHeader text="Books" color="text-emerald-600" colorRule="border-emerald-900" />
+            <IconButton label={"Add"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={onClick}>
+                <CheckIcon />
+            </IconButton>
+            <SectionHeader text="Members" color="text-sky-600" colorRule="border-sky-900" />
+
+            <SectionHeader text="Transactions" color="text-rose-600" colorRule="border-rose-900" />
+
+            <SectionHeader text="Reservations" color="text-purple-600" colorRule="border-purple-900" />
+
         </>
     );
 }

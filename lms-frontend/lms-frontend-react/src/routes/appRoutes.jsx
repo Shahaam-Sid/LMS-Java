@@ -5,8 +5,9 @@ import DoorStep from "../pages/DoorStep";
 import SignupPage from "../pages/SignupPage";
 import LoginPage from "../pages/LoginPage";
 import Dashboard from "../pages/Dashboard";
+import DashboardLayout from "../layouts/DashboardLayout";
 import GuestOnlyRoute from "../components/GuestOnlyRoutes";
-import ProtectedRoute from "../components/ProtectedRoutes";
+// import ProtectedRoute from "../components/ProtectedRoutes";
 
 export const router = createBrowserRouter([
     {
@@ -17,7 +18,13 @@ export const router = createBrowserRouter([
             { path: "door-step", element: <DoorStep /> },
             { path: "signup", element: <GuestOnlyRoute><SignupPage /></GuestOnlyRoute> },
             { path: "login", element: <GuestOnlyRoute><LoginPage /></GuestOnlyRoute> },
-            { path: "dashboard", element: <ProtectedRoute><Dashboard /></ProtectedRoute> }
+            { 
+                path: "dashboard",
+                element:  <DashboardLayout />,
+                children: [
+                    {index: true, element: <Dashboard />}
+                ]
+            }
         ]
     }
 ])
