@@ -4,19 +4,11 @@ import { useUser } from "../hooks/useUser";
 import FormField from "../components/FormField";
 import { validators } from "../utils/validations";
 import LiveError from "../components/LiveError";
-
-const initialForm = {
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    birthYear: "",
-    password: ""
-};
+import signupForm from "../forms/signupForm"
 
 export default function SignupPage() {
 
-    const [form, setForm] = useState(initialForm);
+    const [form, setForm] = useState(signupForm);
     const [validationErrors, setValidationErrors] = useState({});
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
