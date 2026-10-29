@@ -32,7 +32,7 @@ export function UserProvider({ children }) {
         localStorage.setItem("token", token);
         setUser({token, ...admin});
     }
-
+    
     async function logOut() {
         localStorage.removeItem("token");
         setUser(null);

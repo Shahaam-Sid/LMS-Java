@@ -17,7 +17,7 @@ export function IconButton({ label, color = 'bg-black', stroke = "stroke-white",
         </div>
   
         {/* Text Label */}
-        <span className="text-base font-normal text-slate-800">{label}</span>
+        <span className="text-base font-normal text-slate-800 font-montserrat">{label}</span>
       </button>
     );
   }
