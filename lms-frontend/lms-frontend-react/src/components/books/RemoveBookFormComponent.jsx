@@ -29,9 +29,10 @@ export default function RemoveBookFormComponent() {
         try {
             await RemoveBook(ISBN)
         } catch (err) {
-            setError(err.response?.data?.message ?? "Could not add book")
+            setError(err.response?.data?.message ?? "Could not remove book")
         } finally {
             setLoading(false);
+            setISBN("")
         }
     }
 
@@ -55,4 +56,5 @@ export default function RemoveBookFormComponent() {
 
 async function RemoveBook(ISBN) {
     const res = await api.delete(`api/v1/books/${ISBN}`);
+    return res;
 }

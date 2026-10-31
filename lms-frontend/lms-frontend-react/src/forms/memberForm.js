@@ -4,7 +4,6 @@ const memberForm = {
     email: "",
     address: "",
     birthYear: "",
-    status: ""
 };
 
 export default memberForm;

@@ -10,7 +10,8 @@ export default function UpdateBookFormComponent() {
     const [validationErrors, setValidationErrors] = useState({});
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [isInvalid, setIsInvalid] = useState(true);
+
+    const hasErrors = Object.values(validationErrors).some(msg => msg);
 
     function handleChange(e) {
         const {name, value} = e.target;
@@ -21,7 +22,6 @@ export default function UpdateBookFormComponent() {
             const errorMsg = validate(value);
             setValidationErrors(prev => ({...prev, [name]: errorMsg}))
         }
-        setIsInvalid(Object.values(validationErrors).every(value => !value));
     }
 
     async function handleSubmit(e) {
@@ -38,6 +38,7 @@ export default function UpdateBookFormComponent() {
             setError(err.response?.data?.message ?? "Could not update book")
         } finally {
             setLoading(false);
+            setForm(renameBookForm);
         }
     }
 
@@ -53,7 +54,7 @@ export default function UpdateBookFormComponent() {
                     <FormField label="Available Copies" type="number" name="availableCopies" value={form.availableCopies} min={1} onChange={handleChange} />
                     {error && <p className="text-red-700 font-ibm-plex">{error}</p> }
                     <div className="text-center font-asap-sharp">
-                        <button type="submit" disabled={isInvalid || loading} className="cursor-pointer bg-green-500 disabled:bg-gray-500 text-white hover:cursor-default hover:p-2.5 disabled:hover:p-2 p-2 rounded-2xl transition-all duration-200">
+                        <button type="submit" disabled={hasErrors || loading} className="cursor-pointer bg-green-500 disabled:bg-gray-500 text-white hover:cursor-default hover:p-2.5 disabled:hover:p-2 p-2 rounded-2xl transition-all duration-200">
                             {loading ? "Loading..." : "Update"}
                         </button>
                     </div>
@@ -71,4 +72,6 @@ async function PhyscalBookUpdate(ISBN, shelfLocation, totalCopies, availableCopi
             availableCopies
         }
     );
+
+    return res.data;
 }

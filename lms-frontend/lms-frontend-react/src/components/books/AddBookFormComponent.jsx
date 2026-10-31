@@ -5,13 +5,20 @@ import FormField from "../FormField";
 import LiveError from "../LiveError";
 import api from "../../api/axios";
 
+const physicalBookFields = [
+    "ISBN", "title", "author", "genre",
+    "publishedYear", "shelfLocation", "totalCopies",
+  ];
+
 export default function AddBookFormComponent() {
     const [form, setForm] = useState(bookForm);
     const [validationErrors, setValidationErrors] = useState({});
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [isInvalid, setIsInvalid] = useState(true);
-    const [isFilled, setIsFilled] = useState(false);
+    const isFilled = physicalBookFields.every(
+        (key) => String(form[key] ?? "").trim() !== ""
+      );
+    const hasErrors = Object.values(validationErrors).some(msg => msg);
 
     function handleChange(e) {
         const {name, value} = e.target;
@@ -22,8 +29,6 @@ export default function AddBookFormComponent() {
             const errorMsg = validate(value);
             setValidationErrors(prev => ({...prev, [name]: errorMsg}))
         }
-        setIsInvalid(Object.values(validationErrors).every(value => !value));
-        setIsFilled(Object.values(form).every(value => value));
     }
 
     async function handleSubmit(e) {
@@ -44,6 +49,7 @@ export default function AddBookFormComponent() {
             setError(err.response?.data?.message ?? "Could not add book")
         } finally {
             setLoading(false);
+            setForm(bookForm)
         }
     }
 
@@ -65,7 +71,7 @@ export default function AddBookFormComponent() {
                     <FormField label="Total Copies" type="number" name="totalCopies" value={form.totalCopies} min={1} onChange={handleChange} />
                     {error && <p className="text-red-700 font-ibm-plex">{error}</p> }
                     <div className="text-center font-asap-sharp">
-                        <button type="submit" disabled={!isFilled || isInvalid || loading} className="cursor-pointer bg-green-500 disabled:bg-gray-500 text-white hover:cursor-default hover:p-2.5 disabled:hover:p-2 p-2 rounded-2xl transition-all duration-200">
+                        <button type="submit" disabled={!isFilled || hasErrors || loading} className="cursor-pointer bg-green-500 disabled:bg-gray-500 text-white hover:cursor-default hover:p-2.5 disabled:hover:p-2 p-2 rounded-2xl transition-all duration-200">
                             {loading ? "Loading..." : "Add"}
                         </button>
                     </div>
@@ -85,6 +91,8 @@ async function PhyscalBookCreate(ISBN, title, author, genre, publishedYear, shel
             publishedYear,
             shelfLocation,
             totalCopies,
+            type: "PHYSICAL"
         }
     );
+    return res;
 }

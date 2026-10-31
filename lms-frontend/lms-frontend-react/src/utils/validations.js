@@ -46,6 +46,10 @@ One Numeric Character`
     ID: value => {
         if (value.trim() && value.length != 9) return "Invalid ID";
         return "";
+    },
+    UUID: value => {
+        if (value.trim() && value.length != 36) return "Invalid UUID";
+        return "";
     }
 
 }

@@ -17,6 +17,14 @@ import ReturnFormComponent from "../components/transactions/ReturnFormComponent"
 import ReserveFormComponent from "../components/reservations/ReserveFormComponent";
 import GetQueueFormComponent from "../components/reservations/GetQueueFormComponent";
 import GetMemberResevationsFormComponent from "../components/reservations/GetMemberReservationsFormComponent";
+import GetAllBookResponse from "../components/books/GetAllBookResponseComponent";
+import GetAllBookResponseComponent from "../components/books/GetAllBookResponseComponent";
+import GetAvailableBookResponseComponent from "../components/books/GetAvailableBookResponseComponent";
+import GetAllMemberResponse from "../components/members/GetAllMembersResponse";
+import GetActiveMemberResponse from "../components/members/GetActiveMemberFormComponent";
+import GetAllTransactionResponseComponent from "../components/transactions/GetAllTransactionResponseComponent";
+import GetOverdueResponseComponent from "../components/transactions/GetOverdueResponseComponent";
+import GetActiveTransactionFormComponent from "../components/transactions/GetActiveTransactionFormComponent";
 
 export default function Dashboard() {
 
@@ -44,10 +52,10 @@ export default function Dashboard() {
                 <IconButton label={"Remove"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={() => setActiveForm("Remove Book")}>
                     <MinusIcon />
                 </IconButton>
-                <IconButton label={"Get All"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={onClick}>
+                <IconButton label={"Get All"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={() => setActiveForm("Get All Book")}>
                     <SearchAllIcon />
                 </IconButton>
-                <IconButton label={"Get Available"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={onClick}>
+                <IconButton label={"Get Available"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={() => setActiveForm("Get Available Book")}>
                     <SearchAvailableIcon />
                 </IconButton>
                 <IconButton label={"Update"} color={"bg-emerald-400 hover:bg-emerald-600"} stroke="stroke-emerald-900" onClick={() => setActiveForm("Update Book")}>
@@ -65,10 +73,10 @@ export default function Dashboard() {
                 <IconButton label={"Add"} color={"bg-sky-400 hover:bg-sky-600"} stroke="stroke-sky-900" onClick={() => setActiveForm("Add Member")}>
                     <PlusIcon />
                 </IconButton>
-                <IconButton label={"Get All"} color={"bg-sky-400 hover:bg-sky-600"} stroke="stroke-sky-900" onClick={onClick}>
+                <IconButton label={"Get All"} color={"bg-sky-400 hover:bg-sky-600"} stroke="stroke-sky-900" onClick={() => setActiveForm("Get All Members")}>
                     <SearchAllIcon />
                 </IconButton>
-                <IconButton label={"Get Active"} color={"bg-sky-400 hover:bg-sky-600"} stroke="stroke-sky-900" onClick={onClick}>
+                <IconButton label={"Get Active"} color={"bg-sky-400 hover:bg-sky-600"} stroke="stroke-sky-900" onClick={() => setActiveForm("Get Active Members")}>
                     <SearchAvailableIcon />
                 </IconButton>
             </div>
@@ -77,7 +85,7 @@ export default function Dashboard() {
                 <IconButton label={"Get"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={() => setActiveForm("Get Transaction")}>
                     <GetIcon />
                 </IconButton>
-                <IconButton label={"Get Overdue"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={onClick}>
+                <IconButton label={"Get Overdue"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={() => setActiveForm("Get Overdue Transactions")}>
                     <SearchOneIcon />
                 </IconButton>
                 <IconButton label={"Borrow"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={() => setActiveForm("Borrow")}>
@@ -86,10 +94,10 @@ export default function Dashboard() {
                 <IconButton label={"Return"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={() => setActiveForm("Return")}>
                     <MinusIcon />
                 </IconButton>
-                <IconButton label={"Get All"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={onClick}>
+                <IconButton label={"Get All"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={() => setActiveForm("Get All Transactions")}>
                     <SearchAllIcon />
                 </IconButton>
-                <IconButton label={"Get Active"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={onClick}>
+                <IconButton label={"Get Active"} color={"bg-rose-400 hover:bg-rose-600"} stroke="stroke-rose-900" onClick={() => setActiveForm("Get Active Transactions")}>
                     <SearchAvailableIcon />
                 </IconButton>
             </div>
@@ -112,17 +120,25 @@ export default function Dashboard() {
                     {activeForm === "Get Book" && <GetBookFormComponent />}
                     {activeForm === "Add Book" && <AddBookFormComponent />}
                     {activeForm === "Remove Book" && <RemoveBookFormComponent />}
+                    {activeForm === "Get All Books" && <GetAllBookResponseComponent />}
                     {activeForm === "Update Book" && <UpdateBookFormComponent />}
                     {activeForm === "Search Book" && <SearchBookFormComponent />}
                     {activeForm === "Get Member" && <GetMemberFormComponent />}
                     {activeForm === "Search Member" && <SearchMemberFormComponent />}
                     {activeForm === "Add Member" && <AddMemberFormComponent />}
+                    {activeForm === "Get All Members" && <GetAllMemberResponse />}
+                    {activeForm === "Get Active Members" && <GetActiveMemberResponse />}
                     {activeForm === "Get Transaction" && <GetTransactionFormComponent />}
                     {activeForm === "Borrow" && <BorrowFormComponent />}
                     {activeForm === "Return" && <ReturnFormComponent />}
+                    {activeForm === "Get All Transactions" && <GetAllTransactionResponseComponent />}
+                    {activeForm === "Get Active Transactions" && <GetActiveTransactionFormComponent />}
+                    {activeForm === "Get Overdue Transactions" && <GetOverdueResponseComponent />}
                     {activeForm === "Reserve" && <ReserveFormComponent />}
                     {activeForm === "Get Queue" && <GetQueueFormComponent />}
                     {activeForm === "Get Member List" && <GetMemberResevationsFormComponent />}
+                    {activeForm === "Get All Book" && <GetAllBookResponse />}
+                    {activeForm === "Get Available Book" && <GetAvailableBookResponseComponent />}
                 </OverlayForm>
             )}
         </>
