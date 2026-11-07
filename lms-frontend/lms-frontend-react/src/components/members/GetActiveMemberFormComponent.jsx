@@ -39,7 +39,7 @@ export default function GetActiveMemberResponse() {
                 (<div className="w-xl flex justify-center flex-col">
                     { res.length === 0 ? (  <p>No Books Found</p> ) :
                         (res.map((member) => (
-                            <Card identifier={member.memberID} title={member.name} line1={member.phone} line2={member.email} line3={member.address} color="blue" />
+                            <Card identifier={member.memberID} title={member.name} line1={member.status} color="blue" />
                         ))
                         )
                     }                   

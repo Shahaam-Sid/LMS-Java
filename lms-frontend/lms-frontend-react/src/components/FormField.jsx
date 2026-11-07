@@ -1,4 +1,4 @@
-export default function FormField({ label, type="text", value, onChange, name, required=true, minlength=0, maxlenght=355, min=1930, max }){
+export default function FormField({ label, type="text", step, value, onChange, name, required=true, minlength=0, maxlenght=355, min=1930, max }){
     return (
         <div className="mb-4 ml-4 mr-4">
             <label className="font-asap-sharp block text-sm font-medium mb-1" htmlFor={name}>
@@ -7,6 +7,7 @@ export default function FormField({ label, type="text", value, onChange, name, r
                 <input id={name}
                 name={name}
                 type={type}
+                step={step}
                 value={value}
                 onChange={onChange}
                 required={required}

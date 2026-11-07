@@ -102,8 +102,7 @@ public class MemberService {
     }
     private MemberResponseDTO mapToResponseDTO(Member member) {
         return new MemberResponseDTO(
-            member.getMemberID(), member.getName(), member.getPhone(),
-            member.getEmail(), MemberStatus.valueOf(member.getStatus())
+            member.getMemberID(), member.getName(), MemberStatus.valueOf(member.getStatus())
         );
     }
 }

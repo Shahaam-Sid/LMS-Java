@@ -20,9 +20,9 @@ export const router = createBrowserRouter([
             { path: "login", element: <GuestOnlyRoute><LoginPage /></GuestOnlyRoute> },
             { 
                 path: "dashboard",
-                element:  <DashboardLayout />,
+                element:  <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
                 children: [
-                    {index: true, element: <ProtectedRoute><Dashboard /></ProtectedRoute> }
+                    {index: true, element: <Dashboard /> }
                 ]
             }
         ]
